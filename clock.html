@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>教學時鐘 - 狀態導向版</title>
+    <style>
+        :root {
+            --clock-size: 420px;
+            --primary: #2c3e50;
+            --accent: #e74c3c;
+            --panel-bg: #ffffff;
+            --hour-color: rgba(44, 62, 80, 0.8);
+            --min-color: rgba(127, 140, 141, 0.7);
+            --active-blue: #3498db;
+        }
+        body, html {
+            margin: 0; padding: 0; height: 100%; width: 100%;
+            font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif;
+            background: #f0f2f5; overflow: hidden;
+        }
+        .main-container { display: flex; height: 100vh; width: 100vw; }
+        
+        /* 左側演示區 */
+        .demo-area { flex: 7; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f8f9fa; position: relative; }
+        
+        /* 右側控制面板 */
+        .control-panel { flex: 3; background: var(--panel-bg); box-shadow: -5px 0 15px rgba(0,0,0,0.05); padding: 20px; display: flex; flex-direction: column; gap: 15px; border-left: 1px solid #ddd; overflow-y: auto; }
+        
+        .time-display-big { 
+            font-size: 5rem; font-weight: bold; color: var(--primary); 
+            margin-bottom: 20px; font-variant-numeric: tabular-nums; 
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            display: flex; align-items: baseline; gap: 10px;
+        }
+        .ampm-label { font-size: 2.2rem; color: var(--accent); min-width: 85px; font-weight: 800; }
+        .hide-element { opacity: 0 !important; transform: translateY(-20px); pointer-events: none; }
+
+        .clock-container { position: relative; width: var(--clock-size); height: var(--clock-size); background: white; border: 15px solid var(--primary); border-radius: 50%; box-shadow: 0 15px 45px rgba(0,0,0,0.1); }
+        .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; transition: opacity 0.3s; }
+        .tick { position: absolute; top: 0; left: 50%; width: 2px; height: 12px; background: #bdc3c7; transform-origin: 50% calc(var(--clock-size) / 2); transform: translateX(-50%); }
+        .tick.major { width: 6px; height: 22px; background: var(--primary); }
+        .number-box { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: flex-start; transform-origin: center; padding-top: 25px; box-sizing: border-box; }
+        .number-box span { font-size: 2.2rem; font-weight: bold; color: var(--primary); display: inline-block; }
+
+        #hands-layer { transition: opacity 0.3s; position: absolute; width: 100%; height: 100%; top: 0; left: 0; pointer-events: none; }
+        .hand { position: absolute; bottom: 50%; left: 50%; transform-origin: bottom center; transform: translateX(-50%); mix-blend-mode: multiply; border-radius: 20px 20px 5px 5px; }
+        .hour { width: 14px; height: 115px; background: var(--hour-color); z-index: 3; }
+        .minute { width: 10px; height: 175px; background: var(--min-color); z-index: 2; }
+        .center-dot { position: absolute; width: 18px; height: 18px; background: var(--accent); border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+
+        /* 面板組件 */
+        .section-title { font-size: 1.1rem; font-weight: bold; color: var(--primary); border-left: 5px solid var(--accent); padding-left: 10px; margin: 5px 0; }
+        .control-group { display: flex; flex-direction: column; gap: 8px; background: #fdfdfd; padding: 12px; border-radius: 8px; border: 1px solid #eee; }
+        
+        /* 格式切換區 (Tab 樣式) */
+        .format-selector { display: flex; background: #eee; border-radius: 10px; padding: 4px; gap: 4px; }
+        .format-opt { flex: 1; text-align: center; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; color: #666; }
+        .format-opt.active { background: white; color: var(--active-blue); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+
+        .toggle-btn { display: flex; align-items: center; justify-content: space-between; padding: 10px; background: #fff; border: 1px solid #ddd; border-radius: 8px; cursor: pointer; transition: 0.2s; font-weight: bold; font-size: 0.9rem; color: var(--primary); }
+        .toggle-btn.off { opacity: 0.5; background: #f8f9fa; }
+        
+        .adjustment-row { display: flex; gap: 6px; align-items: center; }
+        .adj-label { min-width: 45px; font-size: 0.85rem; color: #666; font-weight: bold; }
+        .btn { padding: 8px; border: none; border-radius: 6px; font-size: 0.85rem; cursor: pointer; font-weight: bold; transition: 0.2s; flex: 1; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-adjust { background: #e9ecef; color: var(--primary); border: 1px solid #ddd; }
+        .btn-adjust:hover { background: #dee2e6; }
+
+        input[type="range"] { width: 100%; cursor: pointer; }
+        input[type="time"] { font-size: 1.5rem; padding: 5px; width: 100%; box-sizing: border-box; text-align: center; border: 2px solid #ddd; border-radius: 8px; }
+    </style>
+</head>
+<body>
+
+    <div class="main-container">
+        <div class="demo-area">
+            <div class="time-display-big" id="time-text-container">
+                <span id="ampm-text" class="ampm-label" style="display:none;">AM</span>
+                <span id="time-text">10 : 10</span>
+            </div>
+            <div class="clock-container">
+                <div id="ticks-layer" class="overlay"></div>
+                <div id="numbers-layer" class="overlay"></div>
+                <div class="center-dot"></div>
+                <div id="hands-layer">
+                    <div id="hour-hand" class="hand hour"></div>
+                    <div id="minute-hand" class="hand minute"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="control-panel">
+            <div class="section-title">目前時制模式</div>
+            <div class="control-group">
+                <div class="format-selector">
+                    <div id="opt-24h" class="format-opt active" onclick="setFormat(true)">24小時制</div>
+                    <div id="opt-12h" class="format-opt" onclick="setFormat(false)">12小時制</div>
+                </div>
+            </div>
+
+            <div class="section-title">教學模式 (隱藏控制)</div>
+            <div class="control-group">
+                <div class="toggle-btn active" onclick="toggleVisibility('time-text-container', this)">顯示大數字</div>
+                <div class="toggle-btn active" onclick="toggleVisibility('numbers-layer', this)">顯示鐘面數字</div>
+                <div class="toggle-btn active" onclick="toggleVisibility('hands-layer', this)">顯示時分指針</div>
+            </div>
+
+            <div class="section-title">自動演示速度</div>
+            <div class="control-group">
+                <label style="font-size:0.9rem;">速度：<span id="speed-val" style="font-weight:bold; color:var(--accent);">0</span>x</label>
+                <input type="range" id="speed-slider" min="0" max="60" value="0">
+            </div>
+
+            <div class="section-title">時間精細微調</div>
+            <div class="control-group">
+                <div class="adjustment-row"><span class="adj-label">小時</span><button class="btn btn-adjust" onclick="adjustTime(60)">+1小時</button><button class="btn btn-adjust" onclick="adjustTime(-60)">-1小時</button></div>
+                <div class="adjustment-row"><span class="adj-label">半小時</span><button class="btn btn-adjust" onclick="adjustTime(30)">+30分</button><button class="btn btn-adjust" onclick="adjustTime(-30)">-30分</button></div>
+                <div class="adjustment-row"><span class="adj-label">5分鐘</span><button class="btn btn-adjust" onclick="adjustTime(5)">+5分</button><button class="btn btn-adjust" onclick="adjustTime(-5)">-5分</button></div>
+                <div class="adjustment-row"><span class="adj-label">1分鐘</span><button class="btn btn-adjust" onclick="adjustTime(1)">+1分</button><button class="btn btn-adjust" onclick="adjustTime(-1)">-1分</button></div>
+            </div>
+
+            <div class="section-title">現在與設定</div>
+            <div class="control-group">
+                <input type="time" id="time-input" value="10:10">
+                <button class="btn btn-primary" onclick="resetTime()" style="margin-top:5px;">現在時間</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const hourHand = document.getElementById('hour-hand');
+        const minuteHand = document.getElementById('minute-hand');
+        const timeInput = document.getElementById('time-input');
+        const timeText = document.getElementById('time-text');
+        const ampmText = document.getElementById('ampm-text');
+        const speedSlider = document.getElementById('speed-slider');
+        const speedValDisplay = document.getElementById('speed-val');
+
+        let currentTotalMinutes = 10 * 60 + 10;
+        let lastTimestamp = 0;
+        let wasRunning = false;
+        let is24HourFormat = true;
+
+        function init() {
+            const ticksLayer = document.getElementById('ticks-layer');
+            for (let i = 0; i < 60; i++) {
+                const tick = document.createElement('div');
+                tick.className = i % 5 === 0 ? 'tick major' : 'tick';
+                tick.style.transform = `translateX(-50%) rotate(${i * 6}deg)`;
+                ticksLayer.appendChild(tick);
+            }
+            const numbersLayer = document.getElementById('numbers-layer');
+            for (let i = 1; i <= 12; i++) {
+                const box = document.createElement('div');
+                box.className = 'number-box';
+                const angle = i * 30;
+                box.style.transform = `rotate(${angle}deg)`;
+                box.innerHTML = `<span style="transform: rotate(-${angle}deg)">${i}</span>`;
+                numbersLayer.appendChild(box);
+            }
+            requestAnimationFrame(animationLoop);
+        }
+
+        function setFormat(to24h) {
+            is24HourFormat = to24h;
+            document.getElementById('opt-24h').className = is24HourFormat ? 'format-opt active' : 'format-opt';
+            document.getElementById('opt-12h').className = !is24HourFormat ? 'format-opt active' : 'format-opt';
+            ampmText.style.display = is24HourFormat ? 'none' : 'inline';
+            updateView();
+        }
+
+        function toggleVisibility(elementId, btnElement) {
+            const target = document.getElementById(elementId);
+            if (elementId === 'time-text-container') {
+                target.classList.toggle('hide-element');
+            } else {
+                target.style.opacity = (target.style.opacity === '0') ? '1' : '0';
+            }
+            btnElement.classList.toggle('off');
+        }
+
+        function animationLoop(timestamp) {
+            if (!lastTimestamp) lastTimestamp = timestamp;
+            const deltaTime = (timestamp - lastTimestamp) / 1000;
+            lastTimestamp = timestamp;
+            const speed = parseFloat(speedSlider.value);
+            speedValDisplay.innerText = speed;
+            if (speed > 0) {
+                currentTotalMinutes += speed * deltaTime;
+                updateView();
+                wasRunning = true;
+            } else if (wasRunning) {
+                currentTotalMinutes = Math.round(currentTotalMinutes);
+                updateView();
+                syncInputBox();
+                wasRunning = false;
+            }
+            requestAnimationFrame(animationLoop);
+        }
+
+        function adjustTime(mins) {
+            speedSlider.value = 0;
+            currentTotalMinutes = Math.round(currentTotalMinutes) + mins;
+            updateView();
+            syncInputBox();
+        }
+
+        function updateView(noTransition = false) {
+            const total = currentTotalMinutes;
+            const mDeg = total * 6;
+            const hDeg = total * 0.5;
+            const isAuto = parseFloat(speedSlider.value) > 0;
+            const transitionStyle = (isAuto || noTransition) ? 'none' : 'transform 0.4s cubic-bezier(0.1, 0.9, 0.2, 1)';
+            
+            minuteHand.style.transition = transitionStyle;
+            hourHand.style.transition = transitionStyle;
+            minuteHand.style.transform = `translateX(-50%) rotate(${mDeg}deg)`;
+            hourHand.style.transform = `translateX(-50%) rotate(${hDeg}deg)`;
+            
+            const roundMins = Math.round(total);
+            let h24 = ((Math.floor(roundMins / 60) % 24) + 24) % 24;
+            const m = ((roundMins % 60) + 60) % 60;
+            
+            if (is24HourFormat) {
+                timeText.innerText = `${String(h24).padStart(2, '0')} : ${String(m).padStart(2, '0')}`;
+            } else {
+                const ampm = h24 < 12 ? '上午' : '下午';
+                let h12 = h24 % 12;
+                if (h12 === 0) h12 = 12;
+                ampmText.innerText = ampm;
+                timeText.innerText = `${String(h12).padStart(2, '0')} : ${String(m).padStart(2, '0')}`;
+            }
+        }
+
+        function syncInputBox() {
+            const roundMins = Math.round(currentTotalMinutes);
+            const h = ((Math.floor(roundMins / 60) % 24) + 24) % 24;
+            const m = ((roundMins % 60) + 60) % 60;
+            timeInput.value = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+        }
+
+        timeInput.addEventListener('input', () => {
+            const [h, m] = timeInput.value.split(':').map(Number);
+            const currentDayBase = Math.floor(currentTotalMinutes / 1440) * 1440;
+            currentTotalMinutes = currentDayBase + (h * 60 + m);
+            updateView();
+        });
+
+        function resetTime() {
+            const now = new Date();
+            currentTotalMinutes = now.getHours() * 60 + now.getMinutes();
+            speedSlider.value = 0;
+            updateView(true);
+            syncInputBox();
+        }
+
+        init();
+        updateView();
+    </script>
+</body>
+</html>
