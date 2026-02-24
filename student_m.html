@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>學生名單管理系統</title>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <style>
+        body { font-family: "Microsoft JhengHei", Arial, sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; display: flex; justify-content: center; }
+        .container { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 100%; max-width: 650px; }
+        h2 { margin-top: 0; text-align: center; color: #333; }
+        #sync-status { text-align: center; font-size: 0.9rem; color: #ff9800; margin-bottom: 20px; }
+        .add-form { display: flex; gap: 10px; margin-bottom: 20px; padding: 15px; background-color: #f9f9f9; border-radius: 8px; border: 1px solid #ddd; align-items: flex-end; }
+        .form-group { display: flex; flex-direction: column; gap: 5px; }
+        .form-group label { font-size: 0.85rem; color: #666; font-weight: bold; }
+        input, select { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem; box-sizing: border-box; }
+        input[type="number"] { width: 70px; }
+        input[type="text"] { flex: 1; width: 120px; }
+        button { padding: 8px 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 0.95rem; font-weight: bold; transition: 0.2s; }
+        .btn-submit { background-color: #4CAF50; color: white; height: 38px; }
+        .btn-submit:hover { background-color: #388E3C; }
+        .btn-edit-mode { background-color: #1976D2; color: white; height: 38px; }
+        .btn-edit-mode:hover { background-color: #1565C0; }
+        .btn-cancel { background-color: #9e9e9e; color: white; height: 38px; display: none; }
+        .btn-cancel:hover { background-color: #757575; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #ddd; text-align: center; padding: 10px; }
+        th { background-color: #e0e0e0; color: #333; }
+        tr:hover { background-color: #f5f5f5; }
+        .action-btns { display: flex; justify-content: center; gap: 8px; }
+        .btn-edit { background-color: #e3f2fd; color: #1565c0; padding: 5px 10px; font-size: 0.9rem; border: 1px solid #90caf9; }
+        .btn-edit:hover { background-color: #bbdefb; }
+        .btn-delete { background-color: #ffebee; color: #c62828; padding: 5px 10px; font-size: 0.9rem; border: 1px solid #ffcdd2; }
+        .btn-delete:hover { background-color: #ffcdd2; }
+        .gender-M { color: #1976D2; font-weight: bold; } 
+        .gender-F { color: #C2185B; font-weight: bold; } 
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>學生名單管理系統</h2>
+        <div id="sync-status">連線中...</div>
+
+        <div class="add-form" id="formArea">
+            <div class="form-group">
+                <label>座號</label>
+                <input type="number" id="inputNo" min="1" placeholder="例: 1">
+            </div>
+            <div class="form-group">
+                <label>姓名</label>
+                <input type="text" id="inputName" placeholder="例: 王小明">
+            </div>
+            <div class="form-group">
+                <label>性別</label>
+                <select id="inputGender">
+                    <option value="男">男</option>
+                    <option value="女">女</option>
+                </select>
+            </div>
+            <button class="btn-submit" id="submitBtn" onclick="submitStudent()">新增學生</button>
+            <button class="btn-cancel" id="cancelBtn" onclick="cancelEdit()">取消</button>
+        </div>
+
+        <table id="studentTable">
+            <thead>
+                <tr>
+                    <th style="width: 15%;">座號</th>
+                    <th style="width: 35%;">姓名</th>
+                    <th style="width: 15%;">性別</th>
+                    <th style="width: 35%;">操作</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyAZzLxfBuVCb_bF63D8yd8BqFKYUAfiF30",
+            authDomain: "class-record-grid.firebaseapp.com",
+            projectId: "class-record-grid",
+            storageBucket: "class-record-grid.firebasestorage.app",
+            messagingSenderId: "643634349640",
+            appId: "1:643634349640:web:969496a4c416cc63793a7d"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const docRef = db.collection("class_records").doc("student_list");
+
+        let studentList = [];
+        let editingIndex = -1; 
+
+        window.onload = function() { startRealtimeSync(); };
+
+        function startRealtimeSync() {
+            docRef.onSnapshot((docSnap) => {
+                document.getElementById('sync-status').innerText = "🟢 已連線並同步至雲端";
+                document.getElementById('sync-status').style.color = "green";
+
+                if (docSnap.exists) {
+                    studentList = docSnap.data().list || [];
+                    studentList.sort((a, b) => parseInt(a.no) - parseInt(b.no));
+                } else {
+                    studentList = [];
+                }
+                renderTable();
+            }, (error) => {
+                document.getElementById('sync-status').innerText = "連線異常，請檢查網路。";
+                document.getElementById('sync-status').style.color = "red";
+            });
+        }
+
+        function renderTable() {
+            const tbody = document.querySelector('#studentTable tbody');
+            tbody.innerHTML = ''; 
+
+            if (studentList.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="color:#999;">目前沒有學生資料，請從上方新增。</td></tr>';
+                return;
+            }
+
+            studentList.forEach((student, index) => {
+                const tr = document.createElement('tr');
+                const genderClass = student.gender === '男' ? 'gender-M' : 'gender-F';
+
+                tr.innerHTML = `
+                    <td>${student.no}</td>
+                    <td>${student.name}</td>
+                    <td class="${genderClass}">${student.gender}</td>
+                    <td>
+                        <div class="action-btns">
+                            <button class="btn-edit" onclick="editStudent(${index})">修改</button>
+                            <button class="btn-delete" onclick="deleteStudent(${index}, '${student.name}')">刪除</button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function submitStudent() {
+            const noInput = document.getElementById('inputNo');
+            const nameInput = document.getElementById('inputName');
+            const genderInput = document.getElementById('inputGender');
+
+            const no = noInput.value.trim();
+            const name = nameInput.value.trim();
+            const gender = genderInput.value;
+
+            if (!no || !name) {
+                alert("請填寫完整的座號與姓名！");
+                return;
+            }
+
+            if (editingIndex === -1) {
+                if (studentList.some(s => s.no == no)) {
+                    alert(`座號 ${no} 已經存在了！請確認是否輸入錯誤。`);
+                    return;
+                }
+                // 【核心修改】：產生專屬 ID (s_加上現在時間的毫秒數)
+                const uniqueId = 's_' + Date.now().toString();
+                studentList.push({ id: uniqueId, no: parseInt(no), name: name, gender: gender });
+            } else {
+                const isDuplicate = studentList.some((s, idx) => s.no == no && idx !== editingIndex);
+                if (isDuplicate) {
+                    alert(`座號 ${no} 已經被其他同學使用了！`);
+                    return;
+                }
+                
+                // 保持原本的 ID，只更新其他資料
+                const currentId = studentList[editingIndex].id; 
+                studentList[editingIndex] = { id: currentId, no: parseInt(no), name: name, gender: gender };
+                cancelEdit(); 
+            }
+
+            noInput.value = '';
+            nameInput.value = '';
+            saveToFirebase();
+        }
+
+        function editStudent(index) {
+            const student = studentList[index];
+            document.getElementById('inputNo').value = student.no;
+            document.getElementById('inputName').value = student.name;
+            document.getElementById('inputGender').value = student.gender;
+
+            editingIndex = index;
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.innerText = "儲存修改";
+            submitBtn.classList.remove('btn-submit');
+            submitBtn.classList.add('btn-edit-mode');
+            document.getElementById('cancelBtn').style.display = 'block';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function cancelEdit() {
+            editingIndex = -1;
+            document.getElementById('inputNo').value = '';
+            document.getElementById('inputName').value = '';
+            document.getElementById('inputGender').value = '男'; 
+
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.innerText = "新增學生";
+            submitBtn.classList.remove('btn-edit-mode');
+            submitBtn.classList.add('btn-submit');
+            document.getElementById('cancelBtn').style.display = 'none';
+        }
+
+        function deleteStudent(index, name) {
+            if (editingIndex === index) {
+                alert("您正在修改這筆資料，請先儲存或取消修改後再刪除。");
+                return;
+            }
+            if (confirm(`確定要刪除學生「${name}」嗎？\n(注意：他在登記表上的紀錄也會一併失效)`)) {
+                studentList.splice(index, 1);
+                if (editingIndex !== -1) cancelEdit();
+                saveToFirebase();
+            }
+        }
+
+        function saveToFirebase() {
+            docRef.set({ list: studentList }).catch(error => { alert("儲存失敗：" + error.message); });
+        }
+    </script>
+</body>
+</html>
