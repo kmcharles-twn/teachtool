@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>操場測驗計時系統 (平板防誤觸優化版)</title>
+    <title>操場測驗計時系統 (窄側欄 + 捲動紀錄版)</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -26,10 +26,11 @@
             flex: 1; 
         }
 
+        /* 將側邊欄縮小一半 (160px) */
         .sidebar {
-            flex: 0 0 320px; 
+            flex: 0 0 160px; 
             background-color: #fff;
-            padding: 20px;
+            padding: 15px; /* 稍微縮減內邊距 */
             border-radius: 10px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             position: sticky;
@@ -37,39 +38,42 @@
             text-align: center;
         }
 
+        /* 針對窄側欄調整字體大小 */
         .sidebar h1 {
             margin-top: 0;
-            font-size: 1.8rem;
+            font-size: 1.2rem;
+            margin-bottom: 10px;
         }
 
         #main-timer {
-            font-size: 3.5rem;
+            font-size: 2rem;
             font-weight: bold;
             color: #333;
             font-variant-numeric: tabular-nums;
-            margin: 15px 0;
+            margin: 10px 0;
             line-height: 1;
         }
         
         .config-display {
-            font-size: 1rem;
+            font-size: 0.85rem;
             color: #607D8B;
             font-weight: bold;
-            margin-bottom: 20px;
-            padding: 10px;
+            margin-bottom: 15px;
+            padding: 8px 5px;
             background: #f0f4f8;
             border-radius: 8px;
+            line-height: 1.4;
         }
         
         .sidebar-actions {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 10px;
         }
 
         button {
-            padding: 12px 20px;
-            font-size: 1.1rem;
+            padding: 8px 10px;
+            font-size: 0.95rem;
             border: none;
             border-radius: 5px;
             cursor: pointer;
@@ -78,7 +82,7 @@
             width: 100%; 
             box-sizing: border-box;
         }
-        .btn-start { background-color: #4CAF50; color: white; font-size: 1.3rem; padding: 15px; }
+        .btn-start { background-color: #4CAF50; color: white; font-size: 1.1rem; padding: 12px; }
         .btn-start:hover { background-color: #45a049; }
         .btn-reset { background-color: #f44336; color: white; }
         .btn-reset:hover { background-color: #da190b; }
@@ -89,10 +93,9 @@
         .btn-excel { background-color: #1d6f42; color: white; } 
         .btn-excel:hover { background-color: #145030; }
 
-        /* --- 學生卡片網格優化 --- */
+        /* --- 學生卡片網格 --- */
         .students-grid {
             display: grid;
-            /* 稍微縮小 minmax 以容納更多卡片 */
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 15px;
         }
@@ -104,8 +107,7 @@
             border-left: 5px solid #2196F3;
             display: flex;
             flex-direction: column;
-            /* 高度大幅壓縮，減少整體頁面長度 */
-            height: 250px; 
+            height: 270px; /* 稍微拉高一點點給捲動區空間 */
             box-sizing: border-box;
             text-align: center;
         }
@@ -138,19 +140,23 @@
         .btn-undo:hover { background-color: #757575; }
         .btn-lap:disabled { background-color: #ccc; cursor: not-allowed; }
 
-        /* --- 歷史紀錄區塊優化 (防止觸控干擾) --- */
+        /* --- 歷史紀錄區塊 (恢復捲動) --- */
         .lap-history {
             flex: 1; 
             background-color: #fafafa; 
             border: 1px solid #eee; 
             border-radius: 5px;
             padding: 5px 8px; 
-            overflow: hidden; /* 移除內部捲動軸 */
+            overflow-y: auto; /* 恢復 Y 軸捲動 */
             text-align: left; 
             font-size: 0.85rem; 
             color: #555; 
-            pointer-events: none; /* 穿透觸控，避免在平板上造成捲動卡頓 */
+            min-height: 0; 
         }
+        /* 美化內部小捲軸 */
+        .lap-history::-webkit-scrollbar { width: 4px; }
+        .lap-history::-webkit-scrollbar-thumb { background-color: #bbb; border-radius: 4px; }
+
         .lap-row { display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px dashed #ddd; }
         .lap-row:last-child { border-bottom: none; }
         .lap-row .lap-time { font-family: monospace; font-weight: bold; }
@@ -197,7 +203,7 @@
             .app-container { flex-direction: column; }
             .sidebar { flex: none; width: 100%; position: static; box-sizing: border-box; margin-bottom: 20px; }
             .sidebar-actions { flex-direction: row; flex-wrap: wrap; justify-content: center; }
-            .sidebar-actions button { width: calc(50% - 6px); margin-bottom: 0; }
+            .sidebar-actions button { width: calc(33% - 8px); margin-bottom: 0; }
             .btn-start { width: 100% !important; } 
         }
     </style>
@@ -210,20 +216,20 @@
         </div>
 
         <div class="sidebar">
-            <h1>🏃‍♂️ 操場測驗系統</h1>
+            <h1>🏃‍♂️ 測驗系統</h1>
             
             <div id="main-timer">00:00.00</div>
 
             <div class="config-display" id="configDisplay">
-                目標: 10 圈 (每圈 200m)<br>總距離: 2000m
+                目標: 10 圈<br>(每圈 200m)<br>總: 2000m
             </div>
             
             <div class="sidebar-actions">
-                <button class="btn-start" id="startBtn" onclick="toggleTimer()">開始測驗</button>
-                <button class="btn-manage" id="manageBtn" onclick="openStudentModal()">👥 管理名單</button>
-                <button class="btn-settings" id="settingsBtn" onclick="openSettingsModal()">⚙️ 測驗設定</button>
-                <button class="btn-excel" onclick="exportToExcel()">📊 匯出成績</button>
-                <button class="btn-reset" onclick="resetSystem()">重置系統</button>
+                <button class="btn-start" id="startBtn" onclick="toggleTimer()">開始</button>
+                <button class="btn-manage" id="manageBtn" onclick="openStudentModal()">👥 名單</button>
+                <button class="btn-settings" id="settingsBtn" onclick="openSettingsModal()">⚙️ 設定</button>
+                <button class="btn-excel" onclick="exportToExcel()">📊 Excel</button>
+                <button class="btn-reset" onclick="resetSystem()">重置</button>
             </div>
         </div>
     </div>
@@ -253,8 +259,8 @@
             <div class="modal-header">
                 <h2>👥 學生資料管理</h2>
                 <div>
-                    <button class="btn-util" onclick="exportData()" title="匯出供本系統讀取的備份檔">⬇️ 系統備份</button>
-                    <button class="btn-util" onclick="triggerImport()">⬆️ 系統還原</button>
+                    <button class="btn-util" onclick="exportData()" title="匯出供本系統讀取的備份檔">⬇️ 備份</button>
+                    <button class="btn-util" onclick="triggerImport()">⬆️ 還原</button>
                     <input type="file" id="importFile" accept=".json" style="display:none" onchange="handleImport(event)">
                 </div>
             </div>
@@ -316,7 +322,7 @@
                 
                 if (isRunning) {
                     timerInterval = setInterval(updateMainTimer, 10);
-                    document.getElementById('startBtn').textContent = "暫停計時";
+                    document.getElementById('startBtn').textContent = "暫停";
                     document.getElementById('startBtn').style.backgroundColor = "#ff9800";
                 } else if (startTime > 0) {
                     updateMainTimer(); 
@@ -410,7 +416,8 @@
 
         function updateConfigDisplay() {
             const totalMeters = configLaps * configDistance;
-            document.getElementById('configDisplay').innerHTML = `目標: ${configLaps} 圈 (每圈 ${configDistance}m)<br>總距離: ${totalMeters}m`;
+            // 配合窄側欄排版
+            document.getElementById('configDisplay').innerHTML = `目標: ${configLaps} 圈<br>(每圈 ${configDistance}m)<br>總: ${totalMeters}m`;
         }
 
         function openSettingsModal() {
@@ -549,10 +556,10 @@
                 }
                 timerInterval = setInterval(updateMainTimer, 10);
                 isRunning = true;
-                btn.textContent = "暫停計時"; btn.style.backgroundColor = "#ff9800";
+                btn.textContent = "暫停"; btn.style.backgroundColor = "#ff9800";
             } else {
                 clearInterval(timerInterval); timerInterval = null; isRunning = false;
-                btn.textContent = "繼續計時"; btn.style.backgroundColor = "#4CAF50";
+                btn.textContent = "開始"; btn.style.backgroundColor = "#4CAF50";
             }
             saveData(); checkButtonsVisibility(); renderStudents();
         }
@@ -561,7 +568,7 @@
             if (confirm("這會清除所有計時紀錄，確定嗎？(不會刪除學生名單與設定)")) {
                 clearInterval(timerInterval); timerInterval = null; isRunning = false; startTime = 0;
                 document.getElementById('main-timer').textContent = "00:00.00";
-                document.getElementById('startBtn').textContent = "開始測驗";
+                document.getElementById('startBtn').textContent = "開始";
                 document.getElementById('startBtn').style.backgroundColor = "#4CAF50";
                 studentsData.forEach(student => {
                     student.laps = 0; student.lapTimestamps = []; student.timeRecord = null; student.paceRecord = null; 
@@ -571,7 +578,7 @@
         }
 
         function addLap(index) {
-            if (!isRunning) return alert("請先按下「開始測驗」！");
+            if (!isRunning) return alert("請先按下「開始」！");
             let student = studentsData[index];
             if (student.laps < configLaps) {
                 const currentElapsedMs = Date.now() - startTime;
@@ -617,12 +624,8 @@
                         return `<div class="lap-row"><span class="lap-num">第 ${i + 1} 圈</span><span class="lap-time">${formatTime(lapDuration)}</span></div>`;
                     });
                     
-                    // 只顯示最新兩筆紀錄，避免內部產生捲動軸干擾操作
-                    const reversedRows = rows.reverse();
-                    lapHistoryHtml = reversedRows.slice(0, 2).join('');
-                    if (reversedRows.length > 2) {
-                        lapHistoryHtml += `<div style="text-align:center; color:#ccc; font-size:0.75rem; margin-top:2px; letter-spacing: 2px;">•••</div>`;
-                    }
+                    // 恢復完整捲動，不再做 slice(0, 2) 裁切
+                    lapHistoryHtml = rows.reverse().join('');
                 } else {
                     lapHistoryHtml = '<div style="text-align:center; color:#aaa; margin-top:5px;">尚未有分圈紀錄</div>';
                 }
