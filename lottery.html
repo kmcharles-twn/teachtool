@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>抽籤統計程式</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            background-color: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h2 {
+            text-align: center;
+            color: #2c3e50;
+        }
+        .input-group {
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .input-group label {
+            font-weight: bold;
+        }
+        .input-group input {
+            width: 100px;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .btn-start {
+            width: 100%;
+            padding: 12px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-top: 10px;
+            margin-bottom: 20px;
+        }
+        .btn-start:hover {
+            background-color: #2980b9;
+        }
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>🎯 抽籤統計程式</h2>
+    
+    <div class="input-group">
+        <label style="color: #e74c3c;">🔴 紅色籤數量：</label>
+        <input type="number" id="redQty" value="10" min="0">
+    </div>
+    <div class="input-group">
+        <label style="color: #3498db;">🔵 藍色籤數量：</label>
+        <input type="number" id="blueQty" value="10" min="0">
+    </div>
+    <div class="input-group">
+        <label style="color: #2ecc71;">🟢 綠色籤數量：</label>
+        <input type="number" id="greenQty" value="10" min="0">
+    </div>
+    
+    <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+
+    <div class="input-group">
+        <label>🎲 預計抽籤次數：</label>
+        <input type="number" id="drawTimes" value="5" min="1">
+    </div>
+
+    <div style="margin-bottom: 20px; text-align: right; font-size: 14px;">
+        <input type="checkbox" id="replacement" checked>
+        <label for="replacement">抽出後放回 (可重複抽中同一個)</label>
+    </div>
+
+    <button class="btn-start" onclick="startDrawing()">開始抽籤</button>
+
+    <div class="chart-container">
+        <canvas id="resultChart"></canvas>
+    </div>
+</div>
+
+<script>
+    // 註冊顯示數字的擴充套件
+    Chart.register(ChartDataLabels);
+    
+    let chartInstance = null;
+
+    function startDrawing() {
+        // 取得輸入數值
+        const redQty = parseInt(document.getElementById('redQty').value) || 0;
+        const blueQty = parseInt(document.getElementById('blueQty').value) || 0;
+        const greenQty = parseInt(document.getElementById('greenQty').value) || 0;
+        const drawTimes = parseInt(document.getElementById('drawTimes').value) || 0;
+        const withReplacement = document.getElementById('replacement').checked;
+
+        const totalLots = redQty + blueQty + greenQty;
+
+        // 基礎防呆檢查
+        if (totalLots === 0) {
+            alert("請至少輸入一支籤！");
+            return;
+        }
+        if (drawTimes <= 0) {
+            alert("抽籤次數必須大於 0！");
+            return;
+        }
+        if (!withReplacement && drawTimes > totalLots) {
+            alert("在「不放回」的情況下，抽籤次數不能大於總籤數！");
+            return;
+        }
+
+        // 建立籤筒
+        let pool = [];
+        for(let i=0; i<redQty; i++) pool.push('Red');
+        for(let i=0; i<blueQty; i++) pool.push('Blue');
+        for(let i=0; i<greenQty; i++) pool.push('Green');
+
+        // 統計結果
+        let results = { 'Red': 0, 'Blue': 0, 'Green': 0 };
+
+        // 開始抽籤
+        for(let i=0; i<drawTimes; i++) {
+            const randomIndex = Math.floor(Math.random() * pool.length);
+            const drawnColor = pool[randomIndex];
+            results[drawnColor]++;
+            
+            // 如果設定為「抽出不放回」，就將該支籤從籤筒中移除
+            if (!withReplacement) {
+                pool.splice(randomIndex, 1);
+            }
+        }
+
+        // 繪製圖表
+        drawChart(results['Red'], results['Blue'], results['Green']);
+    }
+
+    function drawChart(redCount, blueCount, greenCount) {
+        const ctx = document.getElementById('resultChart').getContext('2d');
+        
+        // 如果已經有圖表，先銷毀舊的再畫新的
+        if (chartInstance) {
+            chartInstance.destroy();
+        }
+
+        chartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['紅色籤', '藍色籤', '綠色籤'],
+                datasets: [{
+                    label: '抽中次數',
+                    data: [redCount, blueCount, greenCount],
+                    backgroundColor: [
+                        'rgba(231, 76, 60, 0.7)',
+                        'rgba(52, 152, 219, 0.7)',
+                        'rgba(46, 204, 113, 0.7)'
+                    ],
+                    borderColor: [
+                        'rgba(231, 76, 60, 1)',
+                        'rgba(52, 152, 219, 1)',
+                        'rgba(46, 204, 113, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                layout: {
+                    padding: {
+                        top: 25 // 預留頂部空間，避免數字被圖表邊緣切到
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1 // Y軸只顯示整數
+                        },
+                        grace: '5%' // Y軸最高處多留一點彈性空間
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false // 隱藏頂部的標籤說明
+                    },
+                    datalabels: {
+                        color: '#333', // 數字的顏色
+                        font: {
+                            weight: 'bold', // 粗體字
+                            size: 16       // 數字大小
+                        },
+                        anchor: 'end',     // 錨點定在長條圖的頂端
+                        align: 'top',      // 將文字對齊在頂端的上方
+                        formatter: function(value) {
+                            return value; // 直接顯示數值，如果是 0 也會顯示
+                        }
+                    }
+                }
+            }
+        });
+    }
+</script>
+
+</body>
+</html>
