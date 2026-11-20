@@ -56,6 +56,7 @@
       display: flex;
       gap: 10px;
       align-items: center;
+      flex-wrap: wrap;
     }
     .btn {
       padding: 8px 16px;
@@ -89,7 +90,7 @@
       color: #64748b;
     }
 
-    /* 功能分支卡片網格（未來擴充自動排列） */
+    /* 功能分支卡片網格 */
     .hub-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -153,11 +154,6 @@
     .theme-math .card-title { color: #0369a1; }
     .theme-math .card-cta { background-color: #0284c7; }
 
-    /* 未來擴充新主題可使用的備用配色 */
-    .theme-science { border-color: #bbf7d0; }
-    .theme-science .card-title { color: #15803d; }
-    .theme-science .card-cta { background-color: #22c55e; }
-
     .hidden { display: none !important; }
   </style>
 </head>
@@ -171,10 +167,10 @@
         <span class="role-tag role-student" id="userRoleTag">學生</span>
       </div>
       <div class="nav-actions">
-          <a href="quiz_manager.html" id="quizManageBtn" class="btn btn-teacher hidden">📚 周刊題庫管理</a>
-          <a href="admin.html" id="adminManageBtn" class="btn btn-admin hidden">🛡️ 帳號權限管理</a>
-          <button class="btn btn-logout" id="logoutBtn">登出</button>
-    </div>
+        <a href="quiz_manager.html" id="quizManageBtn" class="btn btn-teacher hidden">📚 周刊題庫管理</a>
+        <a href="admin.html" id="adminManageBtn" class="btn btn-admin hidden">🛡️ 帳號權限管理</a>
+        <button class="btn btn-logout" id="logoutBtn">登出</button>
+      </div>
     </div>
 
     <!-- 歡迎標語 -->
@@ -183,7 +179,7 @@
       <p>今天想要探索哪一個學習區呢？點選下方卡片開始吧！</p>
     </div>
 
-    <!-- 功能分支卡片區（由下方 JavaScript 設定檔動態產生，方便未來擴充） -->
+    <!-- 功能分支卡片區 -->
     <div class="hub-grid" id="hubGrid"></div>
   </div>
 
@@ -192,20 +188,18 @@
     import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-auth.js";
     import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js";
 
-    // ========================================================
-    // 【未來擴充設定區】
-    // 以後只要在這個陣列多加一組物件，首頁就會自動長出新的學習分支！
-    // ========================================================
     const LEARNING_MODULES = [
       {
         id: "newspaper",
         title: "國語日報周刊",
         icon: "📰",
         description: "閱讀每週精選兒童新聞與有趣小故事，增進閱讀理解力！",
+        teacherDescription: "檢視全班各期周刊閱讀測驗的通過與未通過名單統計！",
         buttonText: "開始閱讀",
+        teacherButtonText: "檢視閱讀情況",
         themeClass: "theme-newspaper",
-        url: "newspaper.html", // 未來建立國語日報周刊頁面時對應的檔名
-        ready: true           // 設為 false 時，點擊會溫馨提示「即將開放」，設為 true 則直接跳轉
+        url: "newspaper.html",
+        ready: true
       },
       {
         id: "chinese",
@@ -214,7 +208,7 @@
         description: "練習生字造詞、成語闖關與句型小遊戲，變成語文小高手！",
         buttonText: "進入練習",
         themeClass: "theme-chinese",
-        url: "chinese_zone.html", // 未來建立國語學習區頁面時對應的檔名
+        url: "chinese_zone.html",
         ready: false
       },
       {
@@ -224,24 +218,28 @@
         description: "挑戰一位數加減法與趣味數學題，累積星星拿獎盃！",
         buttonText: "開始挑戰",
         themeClass: "theme-math",
-        url: "math_game.html", // 直接連往已完成的數學遊戲
-        ready: false
+        url: "math_game.html",
+        ready: true
       }
     ];
 
-    // 渲染首頁功能卡片
-    function renderHubCards() {
+    // 依登入角色動態渲染首頁功能卡片
+    function renderHubCards(role) {
       const grid = document.getElementById('hubGrid');
       grid.innerHTML = "";
+      const isStaff = (role === "teacher" || role === "admin");
 
       LEARNING_MODULES.forEach(mod => {
+        const displayDesc = (isStaff && mod.teacherDescription) ? mod.teacherDescription : mod.description;
+        const displayBtnText = (isStaff && mod.teacherButtonText) ? mod.teacherButtonText : mod.buttonText;
+
         const card = document.createElement('div');
         card.className = `hub-card ${mod.themeClass}`;
         card.innerHTML = `
           <div class="card-icon">${mod.icon}</div>
           <h2 class="card-title">${mod.title}</h2>
-          <p class="card-desc">${mod.description}</p>
-          <span class="card-cta">${mod.buttonText}</span>
+          <p class="card-desc">${displayDesc}</p>
+          <span class="card-cta">${displayBtnText}</span>
         `;
 
         card.addEventListener('click', () => {
@@ -275,7 +273,6 @@
 
       document.getElementById('userName').textContent = userData.name || "同學";
       
-      // 顯示對應的身分標籤
       const roleTag = document.getElementById('userRoleTag');
       if (role === "admin") {
         roleTag.textContent = "管理員";
@@ -291,7 +288,7 @@
         roleTag.className = "role-tag role-student";
       }
 
-      renderHubCards();
+      renderHubCards(role);
       document.getElementById('mainWrapper').classList.remove('hidden');
     });
 
