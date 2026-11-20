@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>國語日報周刊 - 雲端題庫管理中心</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: "Microsoft JhengHei", "PingFang TC", -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background-color: #f1f5f9;
+      padding: 20px 16px;
+      color: #1e293b;
+    }
+    .wrapper {
+      max-width: 880px;
+      margin: 0 auto;
+    }
+
+    /* 頂部導覽列 */
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #ffffff;
+      padding: 14px 22px;
+      border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .user-info { font-weight: bold; font-size: 16px; color: #0f172a; display: flex; align-items: center; gap: 10px; }
+    .role-badge {
+      font-size: 12px;
+      padding: 3px 10px;
+      border-radius: 999px;
+      background: #dbeafe;
+      color: #1d4ed8;
+    }
+    .nav-btns { display: flex; gap: 10px; }
+    .btn {
+      border: none;
+      padding: 9px 16px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-home { background: #e2e8f0; color: #334155; }
+    .btn-home:hover { background: #cbd5e1; }
+    .btn-blue { background: #2563eb; color: white; }
+    .btn-blue:hover { background: #1d4ed8; }
+    .btn-purple { background: #7c3aed; color: white; }
+    .btn-purple:hover { background: #6d28d9; }
+    .btn-green { background: #16a34a; color: white; }
+    .btn-green:hover { background: #15803d; }
+    .btn-danger { background: #fee2e2; color: #b91c1c; }
+    .btn-danger:hover { background: #fecaca; }
+    .btn-secondary { background: #e2e8f0; color: #475569; }
+    .btn-secondary:hover { background: #cbd5e1; }
+
+    /* 主卡片容器 */
+    .card-container {
+      background: #ffffff;
+      border-radius: 20px;
+      padding: 28px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+    }
+    h1 { margin: 0 0 8px 0; color: #0f172a; font-size: 24px; }
+    .subtitle { color: #64748b; font-size: 14px; margin-bottom: 24px; }
+
+    /* 工具列與列表 */
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid #f1f5f9;
+    }
+    .action-group { display: flex; gap: 10px; flex-wrap: wrap; }
+
+    .quiz-list { display: grid; gap: 14px; }
+    .quiz-item {
+      border: 2px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      background: #f8fafc;
+    }
+    .quiz-meta { flex: 1; }
+    .quiz-issue {
+      display: inline-block;
+      background: #ffedd5;
+      color: #c2410c;
+      font-size: 12px;
+      font-weight: bold;
+      padding: 3px 10px;
+      border-radius: 999px;
+      margin-bottom: 6px;
+    }
+    .status-pill {
+      display: inline-block;
+      font-size: 12px;
+      font-weight: bold;
+      padding: 3px 10px;
+      border-radius: 999px;
+      margin-left: 6px;
+      cursor: pointer;
+    }
+    .pill-published { background: #dcfce7; color: #15803d; }
+    .pill-draft { background: #e2e8f0; color: #475569; }
+    .quiz-title { font-size: 18px; font-weight: 800; color: #1e293b; margin: 0 0 4px 0; }
+    .quiz-sub { font-size: 13px; color: #64748b; }
+
+    /* 表單編輯區 */
+    .editor-box {
+      background: #f8fafc;
+      border: 2px solid #cbd5e1;
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+    @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
+    .form-group label {
+      display: block;
+      font-size: 14px;
+      font-weight: bold;
+      color: #334155;
+      margin-bottom: 6px;
+    }
+    .form-group input[type="text"], textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+    textarea { font-family: Consolas, Monaco, monospace; line-height: 1.5; }
+    .publish-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: bold;
+      color: #15803d;
+      background: #dcfce7;
+      padding: 10px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .editor-q-card {
+      background: #ffffff;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+    .editor-q-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      font-weight: bold;
+      color: #0369a1;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .q-card-tools {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-opt-count {
+      background: #e0f2fe;
+      color: #0369a1;
+      padding: 4px 10px;
+      font-size: 12px;
+    }
+    .btn-opt-count:hover { background: #bae6fd; }
+    .editor-opt-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 8px;
+    }
+    .editor-opt-row input[type="radio"] { width: 18px; height: 18px; accent-color: #16a34a; cursor: pointer; }
+    .editor-opt-row input[type="text"] {
+      flex: 1;
+      padding: 8px 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+
+    /* 答案說明選填欄位樣式 */
+    .explanation-box {
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px dashed #e2e8f0;
+    }
+    .explanation-box label {
+      display: block;
+      font-size: 13px;
+      font-weight: bold;
+      color: #475569;
+      margin-bottom: 5px;
+    }
+    .explanation-box textarea {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 13px;
+      font-family: "Microsoft JhengHei", "PingFang TC", sans-serif;
+      background-color: #f8fafc;
+      resize: vertical;
+    }
+    .explanation-box textarea:focus {
+      outline: none;
+      border-color: #38bdf8;
+      background-color: #ffffff;
+    }
+
+    /* 匯入區塊樣式 */
+    .import-guide {
+      background: #f5f3ff;
+      border: 1px solid #ddd6fe;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+      font-size: 14px;
+      color: #4c1d95;
+    }
+    .code-sample {
+      background: #1e293b;
+      color: #f8fafc;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      overflow-x: auto;
+      margin-top: 8px;
+    }
+    .preview-box {
+      background: #f0fdf4;
+      border: 2px solid #86efac;
+      border-radius: 12px;
+      padding: 16px;
+      margin-top: 16px;
+    }
+
+    .footer-btns { display: flex; justify-content: space-between; gap: 12px; margin-top: 20px; }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+  <div class="wrapper hidden" id="mainWrapper">
+    <div class="top-bar">
+      <div class="user-info">
+        <span>📚 國語日報周刊題庫管理</span>
+        <span class="role-badge" id="userBadge">載入中...</span>
+      </div>
+      <div class="nav-btns">
+        <a href="newspaper.html" class="btn btn-home">👀 預覽學生測驗頁</a>
+        <a href="student_hub.html" class="btn btn-home">🏠 回學習樂園</a>
+      </div>
+    </div>
+
+    <div class="card-container">
+      <!-- 視圖 1：題庫清單總覽 -->
+      <div id="listView">
+        <h1>🛠️ 雲端題庫管理中心</h1>
+        <p class="subtitle">支援「網頁表單新增（3 或 4 選項）」與「JSON 批次匯入」，點擊狀態標籤可快速切換上下架</p>
+
+        <div class="toolbar">
+          <span style="font-weight:bold; color:#475569;">共 <span id="totalQuizCount">0</span> 份測驗題組</span>
+          <div class="action-group">
+            <button class="btn btn-purple" id="btnOpenImport">📥 批次匯入題庫 (JSON)</button>
+            <button class="btn btn-blue" id="btnOpenCreate">➕ 網頁新增測驗</button>
+          </div>
+        </div>
+
+        <div class="quiz-list" id="quizListContainer">
+          <div style="text-align:center; padding:24px; color:#64748b;">正在讀取雲端題庫...</div>
+        </div>
+      </div>
+
+      <!-- 視圖 2：網頁表單新增 / 編輯 -->
+      <div id="editorView" class="hidden">
+        <h1 id="editorHeading">➕ 網頁新增周刊測驗</h1>
+        <p class="subtitle">填寫期數、篇名與題目，每題可自由切換 3 個或 4 個選項，並勾選正確答案（綠色圓點）</p>
+
+        <div class="editor-box">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="editIssue">期數標示 *</label>
+              <input type="text" id="editIssue" placeholder="例如：第 1 期">
+            </div>
+            <div class="form-group">
+              <label for="editTitle">文章篇名 / 測驗標題 *</label>
+              <input type="text" id="editTitle" placeholder="例如：台灣黑熊的森林秘密">
+            </div>
+          </div>
+          <label class="publish-toggle">
+            <input type="checkbox" id="editPublished" checked style="width:18px; height:18px;">
+            <span>立即發布上架（勾選後學生端才看得到；取消勾選則存為草稿）</span>
+          </label>
+        </div>
+
+        <div id="editorQuestionsContainer"></div>
+
+        <button type="button" class="btn btn-secondary" id="btnAddQuestion" style="width:100%; border: 2px dashed #94a3b8; justify-content:center;">➕ 增加一題選擇題</button>
+
+        <div class="footer-btns">
+          <button type="button" class="btn btn-secondary" id="btnCancelEdit">取消返回</button>
+          <button type="button" class="btn btn-green" id="btnSaveQuiz" style="padding: 12px 28px; font-size: 15px;">💾 儲存題庫</button>
+        </div>
+      </div>
+
+      <!-- 視圖 3：JSON 批次匯入視圖 -->
+      <div id="importView" class="hidden">
+        <h1>📥 批次匯入題庫 (JSON)</h1>
+        <p class="subtitle">可直接上傳 .json 檔案，或貼上整理好的題庫 JSON 文字（<code>explanation</code> 答案說明為選填）</p>
+
+        <div class="import-guide">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+            <strong>📋 標準 JSON 格式範例（<code>options</code> 可放 3 或 4 個項目，<code>explanation</code> 為選填）：</strong>
+            <button type="button" class="btn btn-secondary" id="btnFillSample" style="padding:4px 10px; font-size:12px;">填入範例測試</button>
+          </div>
+          <pre class="code-sample">[
+  {
+    "issue": "第 1 期",
+    "title": "台灣黑熊的森林秘密",
+    "published": true,
+    "questions": [
+      {
+        "q": "台灣黑熊胸前有什麼特別的白色花紋？",
+        "options": ["圓形", "V 字形", "愛心形"],
+        "answer": 1,
+        "explanation": "文章第二段提到，台灣黑熊胸前有明顯的白色 V 字形斑紋。"
+      }
+    ]
+  }
+]</pre>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label for="jsonFileInput">方式一：選擇電腦中的 .json 檔案</label>
+          <input type="file" id="jsonFileInput" accept=".json,application/json">
+        </div>
+
+        <div class="form-group">
+          <label for="jsonTextInput">方式二：直接貼上 JSON 內容</label>
+          <textarea id="jsonTextInput" rows="10" placeholder="請在此貼上 JSON 陣列或單一測驗物件..."></textarea>
+        </div>
+
+        <div style="margin-top: 12px;">
+          <button type="button" class="btn btn-blue" id="btnParseJson">🔍 檢查並預覽匯入內容</button>
+        </div>
+
+        <div id="importPreviewBox" class="preview-box hidden">
+          <h3 style="margin:0 0 10px 0; color:#15803d;">✅ 格式檢查通過！準備匯入以下題組：</h3>
+          <ul id="importPreviewList" style="margin:0 0 16px 0; padding-left:20px; line-height:1.8;"></ul>
+          <button type="button" class="btn btn-green" id="btnConfirmImport" style="padding:12px 24px; font-size:15px;">🚀 確認寫入雲端資料庫</button>
+        </div>
+
+        <div class="footer-btns">
+          <button type="button" class="btn btn-secondary" id="btnCancelImport">取消返回</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { auth, db } from "./firebase-config.js";
+    import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-auth.js";
+    import { 
+      doc, getDoc, collection, getDocs, setDoc, addDoc, updateDoc, deleteDoc, serverTimestamp 
+    } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js";
+
+    let currentUser = null;
+    let currentUserName = "";
+    let allQuizzes = [];
+    let editingQuizId = null;
+    let parsedImportData = [];
+
+    const optionLabels = ["A", "B", "C", "D"];
+
+    function switchView(viewId) {
+      document.getElementById('listView').classList.add('hidden');
+      document.getElementById('editorView').classList.add('hidden');
+      document.getElementById('importView').classList.add('hidden');
+      document.getElementById(viewId).classList.remove('hidden');
+    }
+
+    // 簡易 HTML 跳脫，避免題目或說明含引號時影響 input value 顯示
+    function escapeHtml(str) {
+      if (!str) return "";
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/"/g, "&quot;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+    }
+
+    // =========================================================================
+    // 1. 權限守門員（僅放行 teacher 與 admin）
+    // =========================================================================
+    onAuthStateChanged(auth, async (user) => {
+      if (!user || !user.emailVerified) {
+        window.location.href = "login.html";
+        return;
+      }
+
+      const userSnap = await getDoc(doc(db, "users", user.uid));
+      if (!userSnap.exists()) {
+        await signOut(auth);
+        window.location.href = "login.html";
+        return;
+      }
+
+      const userData = userSnap.data();
+      const role = userData.role || "student";
+
+      if (role !== "teacher" && role !== "admin") {
+        alert("權限不足：只有老師或管理員可以進入題庫管理頁面。");
+        window.location.href = "student_hub.html";
+        return;
+      }
+
+      currentUser = user;
+      currentUserName = userData.name || "教師";
+      document.getElementById('userBadge').textContent = `${role === 'admin' ? '管理員' : '老師'}：${currentUserName}`;
+      document.getElementById('mainWrapper').classList.remove('hidden');
+
+      await loadQuizzes();
+    });
+
+    // =========================================================================
+    // 2. 讀取與渲染題庫列表
+    // =========================================================================
+    async function loadQuizzes() {
+      const container = document.getElementById('quizListContainer');
+      container.innerHTML = `<div style="text-align:center; padding:24px; color:#64748b;">正在讀取雲端題庫...</div>`;
+
+      try {
+        const snap = await getDocs(collection(db, "newspaper_quizzes"));
+        allQuizzes = [];
+        snap.forEach(docSnap => {
+          allQuizzes.push({ id: docSnap.id, ...docSnap.data() });
+        });
+
+        allQuizzes.sort((a, b) => {
+          const timeA = a.createdAt ? a.createdAt.toMillis() : 0;
+          const timeB = b.createdAt ? b.createdAt.toMillis() : 0;
+          return timeB - timeA;
+        });
+
+        document.getElementById('totalQuizCount').textContent = allQuizzes.length;
+        renderQuizList();
+      } catch (error) {
+        console.error("讀取題庫失敗：", error);
+        container.innerHTML = `
+          <div style="color:#b91c1c; background:#fee2e2; padding:16px; border-radius:12px; text-align:center;">
+            <strong>讀取失敗：${error.message}</strong><br>
+            <span style="font-size:13px;">請確認 Firebase Console 的 Firestore 安全規則已包含 newspaper_quizzes 並已點擊「發布」。</span>
+          </div>`;
+      }
+    }
+
+    function renderQuizList() {
+      const container = document.getElementById('quizListContainer');
+      if (allQuizzes.length === 0) {
+        container.innerHTML = `<div style="text-align:center; padding:32px; color:#64748b; background:#f8fafc; border-radius:12px; border:2px dashed #cbd5e1;">目前還沒有任何題庫喔！請點擊右上方「<strong>➕ 網頁新增測驗</strong>」或「<strong>📥 批次匯入題庫</strong>」建立第一份測驗。</div>`;
+        return;
+      }
+
+      container.innerHTML = "";
+      allQuizzes.forEach(quiz => {
+        const isPub = quiz.published === true;
+        const qCount = quiz.questions ? quiz.questions.length : 0;
+
+        const item = document.createElement('div');
+        item.className = "quiz-item";
+        item.innerHTML = `
+          <div class="quiz-meta">
+            <span class="quiz-issue">${escapeHtml(quiz.issue) || "未設定期數"}</span>
+            <span class="status-pill ${isPub ? 'pill-published' : 'pill-draft'} btn-toggle-pub" data-id="${quiz.id}" title="點擊快速切換發布狀態">
+              ${isPub ? '✅ 已發布（點擊下架）' : '📝 草稿（點擊發布）'}
+            </span>
+            <h3 class="quiz-title">${escapeHtml(quiz.title) || "未命名測驗"}</h3>
+            <div class="quiz-sub">共 ${qCount} 題選擇題 ｜ 建立者：${escapeHtml(quiz.createdByName) || "教師"}</div>
+          </div>
+          <div class="action-group">
+            <button class="btn btn-blue btn-edit" data-id="${quiz.id}">✏️ 編輯</button>
+            <button class="btn btn-danger btn-delete" data-id="${quiz.id}">🗑️ 刪除</button>
+          </div>
+        `;
+        container.appendChild(item);
+      });
+
+      document.querySelectorAll('.btn-toggle-pub').forEach(pill => {
+        pill.addEventListener('click', async () => {
+          const target = allQuizzes.find(q => q.id === pill.dataset.id);
+          if (!target) return;
+          await updateDoc(doc(db, "newspaper_quizzes", target.id), {
+            published: !target.published,
+            updatedAt: serverTimestamp()
+          });
+          await loadQuizzes();
+        });
+      });
+
+      document.querySelectorAll('.btn-edit').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const target = allQuizzes.find(q => q.id === btn.dataset.id);
+          if (target) openEditor(target);
+        });
+      });
+
+      document.querySelectorAll('.btn-delete').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const target = allQuizzes.find(q => q.id === btn.dataset.id);
+          if (target && confirm(`確定要刪除「${target.issue} - ${target.title}」嗎？`)) {
+            await deleteDoc(doc(db, "newspaper_quizzes", target.id));
+            await loadQuizzes();
+          }
+        });
+      });
+    }
+
+    // =========================================================================
+    // 3. 網頁表單新增 / 編輯邏輯（支援 3/4 選項與選填答案說明）
+    // =========================================================================
+    document.getElementById('btnOpenCreate').addEventListener('click', () => openEditor(null));
+    document.getElementById('btnCancelEdit').addEventListener('click', () => switchView('listView'));
+
+    function openEditor(quizObj) {
+      editingQuizId = quizObj ? quizObj.id : null;
+      document.getElementById('editorHeading').textContent = quizObj ? "✏️ 編輯周刊測驗" : "➕ 網頁新增周刊測驗";
+      document.getElementById('editIssue').value = quizObj ? quizObj.issue : "";
+      document.getElementById('editTitle').value = quizObj ? quizObj.title : "";
+      document.getElementById('editPublished').checked = quizObj ? (quizObj.published === true) : true;
+
+      const qContainer = document.getElementById('editorQuestionsContainer');
+      qContainer.innerHTML = "";
+
+      if (quizObj && quizObj.questions && quizObj.questions.length > 0) {
+        quizObj.questions.forEach(qData => addQuestionCard(qData));
+      } else {
+        for (let i = 0; i < 5; i++) addQuestionCard(null);
+      }
+
+      switchView('editorView');
+    }
+
+    function addQuestionCard(qData) {
+      const qContainer = document.getElementById('editorQuestionsContainer');
+      const uniqueGroup = "ans_" + Math.random().toString(36).substring(2, 9);
+
+      const card = document.createElement('div');
+      card.className = "editor-q-card";
+
+      const qText = qData ? qData.q : "";
+      const explanationText = qData && qData.explanation ? qData.explanation : "";
+      const initialCount = (qData && Array.isArray(qData.options) && qData.options.length === 3) ? 3 : 4;
+      const opts = qData && Array.isArray(qData.options) ? qData.options : ["", "", "", ""];
+      const ansIdx = qData && typeof qData.answer === "number" ? qData.answer : 0;
+
+      card.dataset.optCount = String(initialCount);
+
+      card.innerHTML = `
+        <div class="editor-q-header">
+          <span class="q-number-label">第 1 題</span>
+          <div class="q-card-tools">
+            <button type="button" class="btn btn-opt-count">切換為 ${initialCount === 4 ? '3' : '4'} 個選項</button>
+            <button type="button" class="btn btn-danger btn-remove-q" style="padding: 4px 10px; font-size: 12px;">移除</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <input type="text" class="q-title-input" placeholder="請輸入題目敘述..." value="${escapeHtml(qText)}">
+        </div>
+        <div class="options-wrapper"></div>
+        <div class="explanation-box">
+          <label>💡 答案說明（選填，可備註解析或文章段落出處）</label>
+          <textarea class="q-explanation-input" rows="2" placeholder="例如：文章第二段有提到...（不填寫可直接留白）">${escapeHtml(explanationText)}</textarea>
+        </div>
+      `;
+
+      const optionsWrapper = card.querySelector('.options-wrapper');
+      const toggleBtn = card.querySelector('.btn-opt-count');
+
+      function renderOptionRows(count, currentVals, selectedAnswer) {
+        optionsWrapper.innerHTML = "";
+        const safeAnswer = selectedAnswer >= count ? 0 : selectedAnswer;
+
+        for (let i = 0; i < count; i++) {
+          const row = document.createElement('div');
+          row.className = "editor-opt-row";
+          row.innerHTML = `
+            <input type="radio" name="${uniqueGroup}" value="${i}" ${safeAnswer === i ? 'checked' : ''} title="設為正確答案">
+            <span style="font-weight:bold; width:20px;">${optionLabels[i]}.</span>
+            <input type="text" class="opt-input" placeholder="選項 ${optionLabels[i]}" value="${escapeHtml(currentVals[i] || '')}">
+          `;
+          optionsWrapper.appendChild(row);
+        }
+      }
+
+      renderOptionRows(initialCount, opts, ansIdx);
+
+      toggleBtn.addEventListener('click', () => {
+        const currentCount = parseInt(card.dataset.optCount, 10);
+        const nextCount = currentCount === 4 ? 3 : 4;
+
+        const currentInputs = Array.from(optionsWrapper.querySelectorAll('.opt-input')).map(inp => inp.value);
+        const checkedRadio = optionsWrapper.querySelector('input[type="radio"]:checked');
+        const currentAns = checkedRadio ? parseInt(checkedRadio.value, 10) : 0;
+
+        card.dataset.optCount = String(nextCount);
+        toggleBtn.textContent = `切換為 ${nextCount === 4 ? '3' : '4'} 個選項`;
+        renderOptionRows(nextCount, currentInputs, currentAns);
+      });
+
+      card.querySelector('.btn-remove-q').addEventListener('click', () => {
+        if (document.querySelectorAll('.editor-q-card').length <= 1) {
+          alert("至少需要保留 1 題喔！");
+          return;
+        }
+        card.remove();
+        refreshQuestionNumbers();
+      });
+
+      qContainer.appendChild(card);
+      refreshQuestionNumbers();
+    }
+
+    function refreshQuestionNumbers() {
+      document.querySelectorAll('.editor-q-card').forEach((card, idx) => {
+        card.querySelector('.q-number-label').textContent = `第 ${idx + 1} 題`;
+      });
+    }
+
+    document.getElementById('btnAddQuestion').addEventListener('click', () => addQuestionCard(null));
+
+    document.getElementById('btnSaveQuiz').addEventListener('click', async () => {
+      const issue = document.getElementById('editIssue').value.trim();
+      const title = document.getElementById('editTitle').value.trim();
+      const published = document.getElementById('editPublished').checked;
+
+      if (!issue || !title) {
+        alert("請填寫「期數標示」與「文章篇名」！");
+        return;
+      }
+
+      const questionCards = document.querySelectorAll('.editor-q-card');
+      const parsedQuestions = [];
+
+      for (let i = 0; i < questionCards.length; i++) {
+        const card = questionCards[i];
+        const qText = card.querySelector('.q-title-input').value.trim();
+        const optInputs = card.querySelectorAll('.opt-input');
+        const checkedRadio = card.querySelector('input[type="radio"]:checked');
+        const explanationVal = card.querySelector('.q-explanation-input').value.trim();
+
+        if (!qText) {
+          alert(`第 ${i + 1} 題的題目尚未填寫！`);
+          return;
+        }
+
+        const optionsArr = [];
+        for (let j = 0; j < optInputs.length; j++) {
+          const val = optInputs[j].value.trim();
+          if (!val) {
+            alert(`第 ${i + 1} 題的選項 ${optionLabels[j]} 尚未填寫！`);
+            return;
+          }
+          optionsArr.push(val);
+        }
+
+        parsedQuestions.push({
+          q: qText,
+          options: optionsArr,
+          answer: checkedRadio ? parseInt(checkedRadio.value, 10) : 0,
+          explanation: explanationVal // 選填欄位，未填時為空字串 ""
+        });
+      }
+
+      const saveBtn = document.getElementById('btnSaveQuiz');
+      saveBtn.disabled = true;
+      saveBtn.textContent = "儲存中...";
+
+      try {
+        const payload = {
+          issue,
+          title,
+          published,
+          questions: parsedQuestions,
+          updatedAt: serverTimestamp()
+        };
+
+        if (editingQuizId) {
+          await setDoc(doc(db, "newspaper_quizzes", editingQuizId), payload, { merge: true });
+        } else {
+          payload.createdAt = serverTimestamp();
+          payload.createdByUid = currentUser.uid;
+          payload.createdByName = currentUserName;
+          await addDoc(collection(db, "newspaper_quizzes"), payload);
+        }
+
+        alert("✅ 題庫儲存成功！");
+        switchView('listView');
+        await loadQuizzes();
+      } catch (error) {
+        alert("儲存失敗：" + error.message);
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = "💾 儲存題庫";
+      }
+    });
+
+    // =========================================================================
+    // 4. JSON 批次匯入邏輯（支援每題 3 或 4 個選項與選填 explanation）
+    // =========================================================================
+    document.getElementById('btnOpenImport').addEventListener('click', () => {
+      document.getElementById('jsonFileInput').value = "";
+      document.getElementById('jsonTextInput').value = "";
+      document.getElementById('importPreviewBox').classList.add('hidden');
+      parsedImportData = [];
+      switchView('importView');
+    });
+
+    document.getElementById('btnCancelImport').addEventListener('click', () => switchView('listView'));
+
+    document.getElementById('btnFillSample').addEventListener('click', () => {
+      const sample = [
+        {
+          issue: "第 1 期",
+          title: "台灣黑熊的森林秘密",
+          published: true,
+          questions: [
+            {
+              q: "台灣黑熊胸前有什麼特別的白色花紋？",
+              options: ["圓形", "V 字形", "愛心形"],
+              answer: 1,
+              explanation: "文章第二段提到台灣黑熊胸前有白色 V 字形斑紋。"
+            },
+            {
+              q: "台灣黑熊最喜歡吃哪一種食物？",
+              options: ["漢堡和薯條", "只有吃肉", "青剛櫟的果實和嫩葉", "只喝牛奶"],
+              answer: 2
+            },
+            {
+              q: "在森林裡遇到黑熊時，我們應該怎麼做才安全？",
+              options: ["大聲尖叫並轉身快跑", "拿石頭丟牠", "保持冷靜、面對黑熊慢慢後退離開"],
+              answer: 2,
+              explanation: "背對黑熊奔跑容易引發追逐本能，應保持冷靜慢慢後退。"
+            },
+            {
+              q: "台灣黑熊會爬樹嗎？",
+              options: ["完全不會", "非常會爬樹，還會上樹摘果子", "只有小時候會", "只有在夢裡會"],
+              answer: 1
+            },
+            {
+              q: "台灣黑熊是台灣的哪一種動物？",
+              options: ["外來種動物", "瀕臨絕種的保育類野生動物", "常見的寵物"],
+              answer: 1
+            }
+          ]
+        }
+      ];
+      document.getElementById('jsonTextInput').value = JSON.stringify(sample, null, 2);
+    });
+
+    document.getElementById('jsonFileInput').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        document.getElementById('jsonTextInput').value = event.target.result;
+        document.getElementById('importPreviewBox').classList.add('hidden');
+      };
+      reader.readAsText(file, "UTF-8");
+    });
+
+    document.getElementById('btnParseJson').addEventListener('click', () => {
+      const rawText = document.getElementById('jsonTextInput').value.trim();
+      if (!rawText) {
+        alert("請先上傳 JSON 檔案或在文字框貼上內容！");
+        return;
+      }
+
+      try {
+        const rawObj = JSON.parse(rawText);
+        const list = Array.isArray(rawObj) ? rawObj : [rawObj];
+
+        if (list.length === 0) throw new Error("JSON 內容為空陣列。");
+
+        const validatedList = list.map((item, idx) => {
+          if (!item.issue || !item.title) {
+            throw new Error(`第 ${idx + 1} 筆資料缺少 "issue" (期數) 或 "title" (篇名)。`);
+          }
+          if (!Array.isArray(item.questions) || item.questions.length === 0) {
+            throw new Error(`「${item.title}」的 "questions" 必須是包含題目的陣列。`);
+          }
+
+          const normalizedQuestions = item.questions.map((qItem, qIdx) => {
+            if (!qItem.q || !Array.isArray(qItem.options) || (qItem.options.length !== 3 && qItem.options.length !== 4)) {
+              throw new Error(`「${item.title}」第 ${qIdx + 1} 題的 "options" 必須包含 3 個或 4 個選項。`);
+            }
+            if (typeof qItem.answer !== "number" || qItem.answer < 0 || qItem.answer >= qItem.options.length) {
+              throw new Error(`「${item.title}」第 ${qIdx + 1} 題的 "answer" 必須是有效的選項數字索引 (0 ~ ${qItem.options.length - 1})。`);
+            }
+
+            return {
+              q: String(qItem.q).trim(),
+              options: qItem.options.map(opt => String(opt).trim()),
+              answer: qItem.answer,
+              explanation: qItem.explanation ? String(qItem.explanation).trim() : ""
+            };
+          });
+
+          return {
+            issue: String(item.issue).trim(),
+            title: String(item.title).trim(),
+            published: item.published !== false,
+            questions: normalizedQuestions
+          };
+        });
+
+        parsedImportData = validatedList;
+        const previewListEl = document.getElementById('importPreviewList');
+        previewListEl.innerHTML = "";
+        validatedList.forEach(item => {
+          const li = document.createElement('li');
+          li.innerHTML = `<strong>[${escapeHtml(item.issue)}] ${escapeHtml(item.title)}</strong>（共 ${item.questions.length} 題，狀態：${item.published ? '立即發布' : '草稿'}）`;
+          previewListEl.appendChild(li);
+        });
+
+        document.getElementById('importPreviewBox').classList.remove('hidden');
+      } catch (err) {
+        document.getElementById('importPreviewBox').classList.add('hidden');
+        alert("❌ JSON 格式檢查失敗：\n" + err.message);
+      }
+    });
+
+    document.getElementById('btnConfirmImport').addEventListener('click', async () => {
+      if (parsedImportData.length === 0) return;
+
+      const confirmBtn = document.getElementById('btnConfirmImport');
+      confirmBtn.disabled = true;
+      confirmBtn.textContent = "匯入寫入中...";
+
+      try {
+        for (const item of parsedImportData) {
+          await addDoc(collection(db, "newspaper_quizzes"), {
+            ...item,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+            createdByUid: currentUser.uid,
+            createdByName: currentUserName
+          });
+        }
+
+        alert(`🎉 成功匯入 ${parsedImportData.length} 份周刊測驗！`);
+        switchView('listView');
+        await loadQuizzes();
+      } catch (error) {
+        alert("匯入過程發生錯誤：" + error.message);
+      } finally {
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = "🚀 確認寫入雲端資料庫";
+      }
+    });
+  </script>
+</body>
+</html>

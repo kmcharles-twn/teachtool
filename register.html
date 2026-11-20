@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>邀請制帳號註冊</title>
+  <style>
+    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body {
+      margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      background-color: #f3f4f6; padding: 16px;
+    }
+    .card {
+      background: #ffffff; width: 100%; max-width: 400px; padding: 32px;
+      border-radius: 12px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    }
+    h2 { margin: 0 0 8px 0; text-align: center; color: #1f2937; font-size: 24px; }
+    .subtitle { text-align: center; color: #6b7280; font-size: 14px; margin-bottom: 20px; }
+    .invite-box {
+      background-color: #eff6ff; border: 1px solid #bfdbfe; padding: 14px;
+      border-radius: 8px; margin-bottom: 18px;
+    }
+    .form-group { margin-bottom: 14px; }
+    label { display: block; margin-bottom: 6px; color: #374151; font-size: 14px; font-weight: 600; }
+    input {
+      width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 15px;
+    }
+    input:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+    .btn {
+      width: 100%; padding: 11px; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer;
+    }
+    .btn-google {
+      background-color: #ffffff; color: #374151; border: 1px solid #d1d5db;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+    }
+    .btn-google:hover { background-color: #f9fafb; }
+    .btn-primary { background-color: #2563eb; color: white; margin-top: 4px; }
+    .btn-primary:hover { background-color: #1d4ed8; }
+    .divider {
+      display: flex; align-items: center; text-align: center; margin: 18px 0; color: #9ca3af; font-size: 13px;
+    }
+    .divider::before, .divider::after { content: ''; flex: 1; border-bottom: 1px solid #e5e7eb; }
+    .divider span { padding: 0 12px; }
+    .links { text-align: center; margin-top: 16px; font-size: 14px; }
+    .links a { color: #2563eb; text-decoration: none; }
+    .links a:hover { text-decoration: underline; }
+    #message { margin-top: 16px; padding: 10px; border-radius: 6px; font-size: 14px; line-height: 1.5; display: none; }
+    .msg-error { background-color: #fee2e2; color: #b91c1c; display: block !important; }
+    .msg-warning { background-color: #fef3c7; color: #b45309; display: block !important; }
+    .msg-success { background-color: #dcfce7; color: #15803d; display: block !important; }
+    .msg-info { background-color: #dbeafe; color: #1d4ed8; display: block !important; }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <h2>建立新帳號</h2>
+    <p class="subtitle">請先輸入邀請碼，再選擇註冊方式</p>
+
+    <div class="invite-box">
+      <label for="inviteCode" style="color: #1e40af;">邀請碼 *</label>
+      <input type="text" id="inviteCode" placeholder="請輸入邀請碼" required>
+    </div>
+
+    <button type="button" class="btn btn-google" id="googleRegisterBtn">
+      <svg width="18" height="18" viewBox="0 0 24 24">
+        <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
+        <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.11-6.72-4.96H1.29v3.14C3.26 21.3 7.31 24 12 24z"/>
+        <path fill="#FBBC05" d="M5.28 14.24c-.24-.72-.38-1.49-.38-2.24s.14-1.52.38-2.24V6.62H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.38l3.99-3.14z"/>
+        <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.62l3.99 3.14c.95-2.85 3.6-4.96 6.72-4.96z"/>
+      </svg>
+      使用 Google 帳號快速註冊
+    </button>
+
+    <div class="divider"><span>或使用電子郵件註冊</span></div>
+
+    <form id="emailRegisterForm">
+      <div class="form-group">
+        <label for="userName">姓名</label>
+        <input type="text" id="userName" placeholder="請輸入您的姓名" required>
+      </div>
+      <div class="form-group">
+        <label for="email">電子郵件</label>
+        <input type="email" id="email" placeholder="name@example.com" required>
+      </div>
+      <div class="form-group">
+        <label for="password">設定密碼</label>
+        <input type="password" id="password" placeholder="請設定密碼" required>
+      </div>
+      <button type="submit" class="btn btn-primary">註冊並寄送驗證信</button>
+    </form>
+
+    <div class="links">
+      <a href="login.html">已有帳號？返回登入</a>
+    </div>
+
+    <div id="message"></div>
+  </div>
+
+  <script type="module">
+    import { auth, googleProvider, db } from "./firebase-config.js";
+    import { 
+      createUserWithEmailAndPassword, 
+      signInWithPopup,
+      sendEmailVerification,
+      signOut 
+    } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-auth.js";
+    import { doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js";
+
+    const messageEl = document.getElementById('message');
+
+    function showMessage(text, type) {
+      messageEl.innerHTML = text;
+      messageEl.className = `msg-${type}`;
+    }
+
+    async function verifyInviteCode(code) {
+      if (!code) throw new Error("EMPTY_CODE");
+      const inviteSnap = await getDoc(doc(db, "invites", code));
+      if (!inviteSnap.exists()) throw new Error("INVALID_CODE");
+      return true;
+    }
+
+    // 1. Google 帳號搭配邀請碼註冊（免再收信驗證）
+    document.getElementById('googleRegisterBtn').addEventListener('click', async () => {
+      const code = document.getElementById('inviteCode').value.trim();
+
+      try {
+        showMessage("正在驗證邀請碼...", "info");
+        await verifyInviteCode(code);
+
+        showMessage("邀請碼通過！請選擇您的 Google 帳號...", "info");
+        const result = await signInWithPopup(auth, googleProvider);
+        const user = result.user;
+
+        const userRef = doc(db, "users", user.uid);
+        const userSnap = await getDoc(userRef);
+
+        if (userSnap.exists()) {
+          showMessage(`此 Google 帳號 (${user.email}) 已經註冊過了，直接為您登入！`, "success");
+        } else {
+          // 寫入時必須帶上 inviteCodeUsed 以通過後端安全規則
+          await setDoc(userRef, {
+            name: user.displayName || "Google 使用者",
+            email: user.email,
+            role: "student",
+            photoURL: user.photoURL || "",
+            inviteCodeUsed: code,
+            loginProvider: "google",
+            createdAt: serverTimestamp()
+          });
+          showMessage(`Google 帳號註冊成功！歡迎，${user.displayName}！`, "success");
+        }
+
+        // 開通成功後可跳轉主畫面：
+        setTimeout(() => { window.location.href = "student_hub.html"; }, 1200);
+
+      } catch (error) {
+        if (error.message === "EMPTY_CODE") {
+          showMessage("請先在上方輸入「邀請碼」，再點擊 Google 註冊！", "warning");
+          document.getElementById('inviteCode').focus();
+        } else if (error.message === "INVALID_CODE" || error.code === 'permission-denied') {
+          showMessage("邀請碼無效、尚未開放或已過期！", "error");
+        } else if (error.code === 'auth/popup-closed-by-user') {
+          showMessage("您已關閉 Google 視窗，尚未完成註冊。", "warning");
+        } else {
+          showMessage(`註冊失敗：${error.message}`, "error");
+        }
+      }
+    });
+
+    // 2. 一般電子郵件搭配邀請碼註冊（需收信點擊驗證連結）
+    document.getElementById('emailRegisterForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const code = document.getElementById('inviteCode').value.trim();
+      const name = document.getElementById('userName').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+
+      try {
+        showMessage("正在驗證邀請碼...", "info");
+        await verifyInviteCode(code);
+
+        showMessage("邀請碼通過！正在建立帳號...", "info");
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        await setDoc(doc(db, "users", user.uid), {
+          name: name,
+          email: user.email,
+          inviteCodeUsed: code,
+          loginProvider: "email",
+          createdAt: serverTimestamp()
+        });
+
+        await sendEmailVerification(user);
+        await signOut(auth);
+
+        showMessage(`註冊成功！系統已寄出驗證信至 <strong>${email}</strong>，請點擊信中連結後再前往登入頁面。`, "success");
+        document.getElementById('emailRegisterForm').reset();
+
+      } catch (error) {
+        if (error.message === "EMPTY_CODE") {
+          showMessage("請先在上方輸入「邀請碼」！", "warning");
+          document.getElementById('inviteCode').focus();
+        } else if (error.message === "INVALID_CODE" || error.code === 'permission-denied') {
+          showMessage("邀請碼無效、尚未開放或已過期！", "error");
+        } else if (error.code === 'auth/email-already-in-use') {
+          showMessage("這個信箱已經註冊過了。", "error");
+        } else if (error.code === 'auth/password-does-not-meet-requirements' || error.code === 'auth/weak-password') {
+          showMessage("密碼強度不足，請設定更複雜的密碼。", "error");
+        } else {
+          showMessage(`註冊失敗：${error.message}`, "error");
+        }
+      }
+    });
+  </script>
+</body>
+</html>

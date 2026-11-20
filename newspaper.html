@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>國語日報周刊 - 閱讀小測驗</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: "Microsoft JhengHei", "PingFang TC", -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #fff7ed 0%, #fefce8 100%);
+      padding: 20px 16px;
+      color: #1e293b;
+    }
+    .wrapper {
+      max-width: 760px;
+      margin: 0 auto;
+    }
+
+    /* 頂部導覽列 */
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #ffffff;
+      padding: 12px 20px;
+      border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      margin-bottom: 24px;
+      border: 2px solid #fed7aa;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .user-info { font-weight: bold; font-size: 16px; color: #9a3412; }
+    .nav-btns { display: flex; gap: 8px; }
+    .btn-home {
+      background: #ffedd5;
+      color: #c2410c;
+      padding: 8px 14px;
+      border-radius: 10px;
+      text-decoration: none;
+      font-weight: bold;
+      font-size: 14px;
+    }
+    .btn-home:hover { background: #fed7aa; }
+    .btn-manage {
+      background: #dbeafe;
+      color: #1d4ed8;
+      padding: 8px 14px;
+      border-radius: 10px;
+      text-decoration: none;
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    /* 主卡片容器 */
+    .card-container {
+      background: #ffffff;
+      border-radius: 24px;
+      padding: 28px;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.07);
+      border: 4px solid #fed7aa;
+    }
+    h1 { margin: 0 0 8px 0; color: #c2410c; font-size: 26px; text-align: center; }
+    .subtitle { text-align: center; color: #64748b; font-size: 15px; margin-bottom: 24px; }
+
+    /* 測驗清單樣式 */
+    .quiz-list { display: grid; gap: 16px; }
+    .quiz-item {
+      border: 2px solid #e2e8f0;
+      border-radius: 18px;
+      padding: 18px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      background: #f8fafc;
+      transition: transform 0.15s, border-color 0.15s;
+      cursor: pointer;
+    }
+    .quiz-item:hover:not(.passed) {
+      transform: translateY(-2px);
+      border-color: #fb923c;
+      background: #fff7ed;
+    }
+    .quiz-item.passed { border-color: #86efac; background: #f0fdf4; cursor: default; }
+    .quiz-meta { flex: 1; }
+    .quiz-issue {
+      display: inline-block;
+      background: #ffedd5;
+      color: #c2410c;
+      font-size: 12px;
+      font-weight: bold;
+      padding: 3px 10px;
+      border-radius: 999px;
+      margin-bottom: 6px;
+    }
+    .quiz-item.passed .quiz-issue { background: #dcfce7; color: #15803d; }
+    .quiz-title { font-size: 19px; font-weight: 800; color: #1e293b; margin: 0 0 6px 0; }
+    .quiz-status-text { font-size: 13px; color: #64748b; }
+    .quiz-status-text.text-pass { color: #15803d; font-weight: bold; }
+    .quiz-status-text.text-retry { color: #d97706; font-weight: bold; }
+
+    .btn-start-quiz {
+      background: #f97316;
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: bold;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+    .quiz-item.passed .btn-start-quiz { background: #bbf7d0; color: #166534; cursor: default; }
+
+    /* 進行測驗樣式 */
+    .quiz-header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #fff7ed;
+      padding: 12px 16px;
+      border-radius: 14px;
+      margin-bottom: 20px;
+      font-weight: bold;
+      color: #9a3412;
+      border: 2px solid #fed7aa;
+    }
+    .question-card {
+      background: #f8fafc;
+      border-radius: 18px;
+      padding: 22px;
+      margin-bottom: 20px;
+      border: 2px solid #e2e8f0;
+    }
+    .question-text { font-size: 21px; font-weight: 800; line-height: 1.5; margin: 0 0 18px 0; color: #0f172a; }
+    .options-grid { display: grid; gap: 12px; }
+    .option-btn {
+      width: 100%;
+      text-align: left;
+      padding: 15px 18px;
+      border: 2px solid #cbd5e1;
+      border-radius: 14px;
+      background: #ffffff;
+      font-size: 18px;
+      font-weight: 600;
+      color: #334155;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .option-btn:hover { border-color: #f97316; background: #fff7ed; }
+    .option-label {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #f1f5f9;
+      color: #475569;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+    .option-btn.selected { border-color: #f97316; background: #ffedd5; color: #9a3412; }
+    .option-btn.selected .option-label { background: #f97316; color: #ffffff; }
+
+    .feedback-banner { min-height: 32px; text-align: center; font-size: 18px; font-weight: bold; margin-bottom: 14px; }
+    .quiz-footer { display: flex; justify-content: space-between; gap: 12px; }
+    .btn-secondary {
+      background: #e2e8f0;
+      color: #475569;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .btn-next {
+      background: #f97316;
+      color: white;
+      border: none;
+      padding: 12px 28px;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-left: auto;
+    }
+
+    /* 結算樣式 */
+    .result-box { text-align: center; padding: 10px 0; }
+    .result-icon { font-size: 72px; margin-bottom: 10px; }
+    .score-display { font-size: 42px; font-weight: 900; margin: 12px 0; }
+    .score-pass { color: #16a34a; }
+    .score-fail { color: #ea580c; }
+    .result-detail {
+      background: #f8fafc;
+      border-radius: 16px;
+      padding: 16px;
+      margin: 18px 0;
+      font-size: 16px;
+      line-height: 1.8;
+      border: 2px solid #e2e8f0;
+    }
+    .save-msg { font-size: 14px; font-weight: bold; margin-bottom: 18px; color: #0284c7; }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+  <div class="wrapper hidden" id="mainWrapper">
+    <div class="top-bar">
+      <div class="user-info">📰 國語日報周刊測驗區 ｜ <span id="studentName">載入中...</span></div>
+      <div class="nav-btns">
+        <a href="quiz_manager.html" id="manageShortcutBtn" class="btn-manage hidden">🛠️ 前往題庫管理</a>
+        <a href="student_hub.html" class="btn-home">🏠 回學習樂園</a>
+      </div>
+    </div>
+
+    <div class="card-container">
+      <!-- 視圖 1：測驗清單 -->
+      <div id="listView">
+        <h1>📚 每週閱讀小挑戰</h1>
+        <p class="subtitle">答對 <strong>80% 以上</strong> 即可通過認證（通過後該篇即完成認證）！</p>
+        <div class="quiz-list" id="quizListContainer">
+          <div style="text-align:center; padding:20px; color:#64748b;">正在載入測驗清單與紀錄...</div>
+        </div>
+      </div>
+
+      <!-- 視圖 2：進行選擇題測驗 -->
+      <div id="quizView" class="hidden">
+        <div class="quiz-header-bar">
+          <span id="activeQuizTitle">測驗標題</span>
+          <span>第 <span id="qIndex">1</span> / <span id="qTotal">5</span> 題</span>
+        </div>
+
+        <div class="question-card">
+          <p class="question-text" id="questionText">題目載入中...</p>
+          <div class="options-grid" id="optionsContainer"></div>
+        </div>
+
+        <div class="feedback-banner" id="feedbackBanner"></div>
+
+        <div class="quiz-footer">
+          <button class="btn-secondary" id="btnQuitQuiz">放棄並回清單</button>
+          <button class="btn-next hidden" id="btnNextQuestion">下一題 ➔</button>
+        </div>
+      </div>
+
+      <!-- 視圖 3：測驗結算畫面 -->
+      <div id="resultView" class="hidden">
+        <div class="result-box">
+          <div class="result-icon" id="resultIcon">🎉</div>
+          <h1 id="resultHeading">測驗通過！太棒了！</h1>
+          <div class="score-display" id="scoreDisplay">100 分</div>
+          <div class="result-detail" id="resultDetail"></div>
+          <div class="save-msg" id="saveStatus">💾 正在儲存測驗紀錄...</div>
+          <button class="btn-next" style="margin:0 auto; display:inline-block;" id="btnBackToList">回到測驗清單</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { auth, db } from "./firebase-config.js";
+    import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-auth.js";
+    import { 
+      doc, getDoc, collection, getDocs, setDoc, query, orderBy, serverTimestamp, arrayUnion 
+    } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js";
+
+    let currentUser = null;
+    let currentStudentName = "";
+    let publishedQuizzes = [];
+    let userRecordsMap = {};
+    let activeQuiz = null;
+    let currentQuestionIdx = 0;
+    let correctCount = 0;
+    let selectedOptionIdx = null;
+    let currentAttemptDetails = [];
+
+    const optionLabels = ["A", "B", "C", "D"];
+
+    function formatTimestamp(ts) {
+      if (!ts) return "";
+      const date = ts.toDate ? ts.toDate() : new Date(ts);
+      return date.toLocaleString('zh-TW', {
+        year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
+      });
+    }
+
+    function switchView(viewId) {
+      document.getElementById('listView').classList.add('hidden');
+      document.getElementById('quizView').classList.add('hidden');
+      document.getElementById('resultView').classList.add('hidden');
+      document.getElementById(viewId).classList.remove('hidden');
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user || !user.emailVerified) {
+        window.location.href = "login.html";
+        return;
+      }
+
+      const userSnap = await getDoc(doc(db, "users", user.uid));
+      if (!userSnap.exists()) {
+        await signOut(auth);
+        window.location.href = "login.html";
+        return;
+      }
+
+      const userData = userSnap.data();
+      currentUser = user;
+      currentStudentName = userData.name || "同學";
+      document.getElementById('studentName').textContent = currentStudentName;
+
+      // 若是老師或管理員進來預覽，顯示返回題庫管理的快捷鈕
+      if (userData.role === "teacher" || userData.role === "admin") {
+        document.getElementById('manageShortcutBtn').classList.remove('hidden');
+      }
+
+      document.getElementById('mainWrapper').classList.remove('hidden');
+
+      await Promise.all([loadPublishedQuizzes(), loadUserQuizRecords()]);
+      renderQuizList();
+    });
+
+    async function loadPublishedQuizzes() {
+      publishedQuizzes = [];
+      try {
+        const q = query(collection(db, "newspaper_quizzes"), orderBy("createdAt", "desc"));
+        const snap = await getDocs(q);
+        snap.forEach(docSnap => {
+          const data = docSnap.data();
+          if (data.published === true) {
+            publishedQuizzes.push({ id: docSnap.id, ...data });
+          }
+        });
+      } catch (error) {
+        console.error("載入測驗清單失敗：", error);
+      }
+    }
+
+    async function loadUserQuizRecords() {
+      if (!currentUser) return;
+      userRecordsMap = {};
+      try {
+        const recordsSnap = await getDocs(collection(db, "users", currentUser.uid, "newspaper_records"));
+        recordsSnap.forEach(docSnap => {
+          userRecordsMap[docSnap.id] = docSnap.data();
+        });
+      } catch (error) {
+        console.error("讀取測驗紀錄失敗：", error);
+      }
+    }
+
+    function renderQuizList() {
+      const container = document.getElementById('quizListContainer');
+      if (publishedQuizzes.length === 0) {
+        container.innerHTML = `<div style="text-align:center; padding:24px; color:#64748b;">目前老師還沒有發布測驗喔，請稍後再來看看！</div>`;
+        return;
+      }
+
+      container.innerHTML = "";
+      publishedQuizzes.forEach(quiz => {
+        const record = userRecordsMap[quiz.id];
+        const isPassed = record && record.passed === true;
+
+        let statusHtml = `<div class="quiz-status-text">🆕 尚未測驗（共 ${quiz.questions.length} 題）</div>`;
+        let btnHtml = `<button class="btn-start-quiz">開始測驗</button>`;
+
+        if (record) {
+          if (isPassed) {
+            const passTimeStr = formatTimestamp(record.passedAt);
+            statusHtml = `<div class="quiz-status-text text-pass">✅ 認證通過（成績 ${record.bestScore} 分）｜通過時間：${passTimeStr}</div>`;
+            btnHtml = `<button class="btn-start-quiz" disabled>已完成認證</button>`;
+          } else {
+            const lastTimeStr = formatTimestamp(record.lastAttemptAt);
+            statusHtml = `<div class="quiz-status-text text-retry">🔄 尚未通過（上次 ${record.lastScore} 分，需達 80 分）｜最後測驗：${lastTimeStr}</div>`;
+            btnHtml = `<button class="btn-start-quiz">重新挑戰</button>`;
+          }
+        }
+
+        const itemEl = document.createElement('div');
+        itemEl.className = `quiz-item ${isPassed ? 'passed' : ''}`;
+        itemEl.innerHTML = `
+          <div class="quiz-meta">
+            <span class="quiz-issue">${quiz.issue}</span>
+            <h3 class="quiz-title">${quiz.title}</h3>
+            ${statusHtml}
+          </div>
+          ${btnHtml}
+        `;
+
+        if (!isPassed) {
+          itemEl.addEventListener('click', () => startQuiz(quiz));
+        }
+
+        container.appendChild(itemEl);
+      });
+    }
+
+    function startQuiz(quiz) {
+      if (userRecordsMap[quiz.id]?.passed === true) return;
+
+      activeQuiz = quiz;
+      currentQuestionIdx = 0;
+      correctCount = 0;
+      currentAttemptDetails = [];
+
+      document.getElementById('activeQuizTitle').textContent = `${quiz.issue}：${quiz.title}`;
+      document.getElementById('qTotal').textContent = quiz.questions.length;
+
+      switchView('quizView');
+      renderQuestion();
+    }
+
+    function renderQuestion() {
+      selectedOptionIdx = null;
+      const qData = activeQuiz.questions[currentQuestionIdx];
+
+      document.getElementById('qIndex').textContent = currentQuestionIdx + 1;
+      document.getElementById('questionText').textContent = `${currentQuestionIdx + 1}. ${qData.q}`;
+      document.getElementById('feedbackBanner').textContent = "請點選一個答案";
+      document.getElementById('feedbackBanner').style.color = "#64748b";
+      document.getElementById('btnNextQuestion').classList.add('hidden');
+
+      const optionsContainer = document.getElementById('optionsContainer');
+      optionsContainer.innerHTML = "";
+
+      qData.options.forEach((optText, idx) => {
+        const btn = document.createElement('button');
+        btn.className = "option-btn";
+        btn.innerHTML = `
+          <span class="option-label">${optionLabels[idx]}</span>
+          <span>${optText}</span>
+        `;
+        btn.addEventListener('click', () => {
+          selectedOptionIdx = idx;
+          document.querySelectorAll('#optionsContainer .option-btn').forEach(b => b.classList.remove('selected'));
+          btn.classList.add('selected');
+
+          const feedbackBanner = document.getElementById('feedbackBanner');
+          feedbackBanner.style.color = "#c2410c";
+          feedbackBanner.textContent = `已選擇 (${optionLabels[idx]})`;
+
+          const nextBtn = document.getElementById('btnNextQuestion');
+          nextBtn.textContent = (currentQuestionIdx < activeQuiz.questions.length - 1) ? "下一題 ➔" : "完成並交卷 🏆";
+          nextBtn.classList.remove('hidden');
+        });
+        optionsContainer.appendChild(btn);
+      });
+    }
+
+    document.getElementById('btnNextQuestion').addEventListener('click', () => {
+      if (selectedOptionIdx === null) return;
+
+      const qData = activeQuiz.questions[currentQuestionIdx];
+      const isCorrect = selectedOptionIdx === qData.answer;
+      if (isCorrect) correctCount++;
+
+      currentAttemptDetails.push({
+        questionIndex: currentQuestionIdx + 1,
+        questionText: qData.q,
+        selectedOption: selectedOptionIdx,
+        selectedText: qData.options[selectedOptionIdx],
+        correctOption: qData.answer,
+        isCorrect: isCorrect
+      });
+
+      if (currentQuestionIdx < activeQuiz.questions.length - 1) {
+        currentQuestionIdx++;
+        renderQuestion();
+      } else {
+        finishQuiz();
+      }
+    });
+
+    document.getElementById('btnQuitQuiz').addEventListener('click', () => {
+      if (confirm("測驗還沒完成，確定要放棄並回到清單嗎？")) {
+        switchView('listView');
+      }
+    });
+
+    async function finishQuiz() {
+      const totalQ = activeQuiz.questions.length;
+      const scorePercent = Math.round((correctCount / totalQ) * 100);
+      const isPassedNow = scorePercent >= 80;
+
+      const iconEl = document.getElementById('resultIcon');
+      const headingEl = document.getElementById('resultHeading');
+      const scoreEl = document.getElementById('scoreDisplay');
+      const detailEl = document.getElementById('resultDetail');
+      const saveStatusEl = document.getElementById('saveStatus');
+
+      scoreEl.textContent = `${scorePercent} 分`;
+      detailEl.innerHTML = `
+        測驗篇目：<strong>${activeQuiz.issue} - ${activeQuiz.title}</strong><br>
+        答對題數：<strong>${correctCount} / ${totalQ} 題</strong>（通過標準：80 分）
+      `;
+
+      if (isPassedNow) {
+        iconEl.textContent = "🎉";
+        headingEl.textContent = "恭喜通過認證！";
+        scoreEl.className = "score-display score-pass";
+      } else {
+        iconEl.textContent = "💪";
+        headingEl.textContent = "差一點點就通過了，再加油！";
+        scoreEl.className = "score-display score-fail";
+      }
+
+      switchView('resultView');
+      saveStatusEl.style.color = "#0284c7";
+      saveStatusEl.textContent = "💾 正在記錄測驗結果...";
+
+      try {
+        const recordRef = doc(db, "users", currentUser.uid, "newspaper_records", activeQuiz.id);
+        const prevRecord = userRecordsMap[activeQuiz.id] || {};
+        const prevBestScore = prevRecord.bestScore || 0;
+        const prevAttemptCount = prevRecord.attemptCount || 0;
+
+        const attemptSummary = {
+          attemptNumber: prevAttemptCount + 1,
+          score: scorePercent,
+          passed: isPassedNow,
+          submittedAt: new Date().toISOString(),
+          answers: currentAttemptDetails
+        };
+
+        const updatePayload = {
+          quizId: activeQuiz.id,
+          issue: activeQuiz.issue,
+          title: activeQuiz.title,
+          studentName: currentStudentName,
+          attemptCount: prevAttemptCount + 1,
+          lastScore: scorePercent,
+          bestScore: Math.max(prevBestScore, scorePercent),
+          lastAttemptAt: serverTimestamp(),
+          latestAnswers: currentAttemptDetails,
+          attemptHistory: arrayUnion(attemptSummary)
+        };
+
+        if (isPassedNow) {
+          updatePayload.passed = true;
+          updatePayload.passedAt = serverTimestamp();
+        } else {
+          updatePayload.passed = false;
+        }
+
+        await setDoc(recordRef, updatePayload, { merge: true });
+
+        saveStatusEl.style.color = "#16a34a";
+        saveStatusEl.textContent = isPassedNow 
+          ? "✅ 認證通過時間已記錄！" 
+          : "✅ 已記錄本次測驗時間，重讀報紙後歡迎再來挑戰！";
+
+      } catch (error) {
+        console.error("儲存測驗紀錄失敗：", error);
+        saveStatusEl.style.color = "#dc2626";
+        saveStatusEl.textContent = "⚠️ 紀錄儲存失敗，請檢查網路連線。";
+      }
+    }
+
+    document.getElementById('btnBackToList').addEventListener('click', async () => {
+      switchView('listView');
+      document.getElementById('quizListContainer').innerHTML = 
+        `<div style="text-align:center; padding:20px; color:#64748b;">正在更新測驗紀錄...</div>`;
+      await loadUserQuizRecords();
+      renderQuizList();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>二年級快樂學習樂園</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: "Microsoft JhengHei", "PingFang TC", -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #f0f9ff 0%, #fefce8 100%);
+      padding: 20px 16px;
+      color: #1e293b;
+    }
+    .wrapper {
+      max-width: 920px;
+      margin: 0 auto;
+    }
+
+    /* 頂部使用者與角色導覽列 */
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #ffffff;
+      padding: 14px 22px;
+      border-radius: 18px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+      margin-bottom: 28px;
+      flex-wrap: wrap;
+      gap: 12px;
+      border: 2px solid #e0f2fe;
+    }
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 16px;
+      font-weight: bold;
+    }
+    .role-tag {
+      font-size: 12px;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-weight: 700;
+    }
+    .role-student { background: #dcfce7; color: #15803d; }
+    .role-teacher { background: #dbeafe; color: #1d4ed8; }
+    .role-admin { background: #fee2e2; color: #b91c1c; }
+
+    .nav-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      text-decoration: none;
+      transition: transform 0.1s;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn-admin { background: #fef3c7; color: #b45309; border: 1px solid #fcd34d; }
+    .btn-teacher { background: #dbeafe; color: #1d4ed8; border: 1px solid #93c5fd; }
+    .btn-logout { background: #f1f5f9; color: #475569; }
+    .btn-logout:hover { background: #e2e8f0; }
+
+    /* 歡迎標題區 */
+    .welcome-banner {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .welcome-banner h1 {
+      margin: 0 0 8px 0;
+      font-size: 30px;
+      color: #0369a1;
+    }
+    .welcome-banner p {
+      margin: 0;
+      font-size: 16px;
+      color: #64748b;
+    }
+
+    /* 功能分支卡片網格（未來擴充自動排列） */
+    .hub-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 22px;
+    }
+    .hub-card {
+      background: #ffffff;
+      border-radius: 24px;
+      padding: 28px 22px;
+      text-align: center;
+      text-decoration: none;
+      color: inherit;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+      border: 4px solid transparent;
+      transition: transform 0.2s, box-shadow 0.2s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      cursor: pointer;
+    }
+    .hub-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 14px 30px rgba(0, 0, 0, 0.1);
+    }
+    .card-icon {
+      font-size: 64px;
+      margin-bottom: 14px;
+      line-height: 1;
+    }
+    .card-title {
+      font-size: 22px;
+      font-weight: 800;
+      margin: 0 0 10px 0;
+    }
+    .card-desc {
+      font-size: 15px;
+      color: #64748b;
+      line-height: 1.5;
+      margin: 0 0 20px 0;
+      flex-grow: 1;
+    }
+    .card-cta {
+      display: inline-block;
+      padding: 10px 24px;
+      border-radius: 999px;
+      font-size: 15px;
+      font-weight: bold;
+      color: #ffffff;
+    }
+
+    /* 各主題專屬配色 */
+    .theme-newspaper { border-color: #fed7aa; }
+    .theme-newspaper .card-title { color: #c2410c; }
+    .theme-newspaper .card-cta { background-color: #f97316; }
+
+    .theme-chinese { border-color: #fbcfe8; }
+    .theme-chinese .card-title { color: #be185d; }
+    .theme-chinese .card-cta { background-color: #ec4899; }
+
+    .theme-math { border-color: #bae6fd; }
+    .theme-math .card-title { color: #0369a1; }
+    .theme-math .card-cta { background-color: #0284c7; }
+
+    /* 未來擴充新主題可使用的備用配色 */
+    .theme-science { border-color: #bbf7d0; }
+    .theme-science .card-title { color: #15803d; }
+    .theme-science .card-cta { background-color: #22c55e; }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+  <div class="wrapper hidden" id="mainWrapper">
+    <!-- 頂部使用者導覽列 -->
+    <div class="top-bar">
+      <div class="user-info">
+        <span>👋 嗨，<span id="userName">同學</span>！</span>
+        <span class="role-tag role-student" id="userRoleTag">學生</span>
+      </div>
+      <div class="nav-actions">
+          <a href="quiz_manager.html" id="quizManageBtn" class="btn btn-teacher hidden">📚 周刊題庫管理</a>
+          <a href="admin.html" id="adminManageBtn" class="btn btn-admin hidden">🛡️ 帳號權限管理</a>
+          <button class="btn btn-logout" id="logoutBtn">登出</button>
+    </div>
+    </div>
+
+    <!-- 歡迎標語 -->
+    <div class="welcome-banner">
+      <h1>🌟 二年級快樂學習樂園</h1>
+      <p>今天想要探索哪一個學習區呢？點選下方卡片開始吧！</p>
+    </div>
+
+    <!-- 功能分支卡片區（由下方 JavaScript 設定檔動態產生，方便未來擴充） -->
+    <div class="hub-grid" id="hubGrid"></div>
+  </div>
+
+  <script type="module">
+    import { auth, db } from "./firebase-config.js";
+    import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-auth.js";
+    import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js";
+
+    // ========================================================
+    // 【未來擴充設定區】
+    // 以後只要在這個陣列多加一組物件，首頁就會自動長出新的學習分支！
+    // ========================================================
+    const LEARNING_MODULES = [
+      {
+        id: "newspaper",
+        title: "國語日報周刊",
+        icon: "📰",
+        description: "閱讀每週精選兒童新聞與有趣小故事，增進閱讀理解力！",
+        buttonText: "開始閱讀",
+        themeClass: "theme-newspaper",
+        url: "newspaper.html", // 未來建立國語日報周刊頁面時對應的檔名
+        ready: true           // 設為 false 時，點擊會溫馨提示「即將開放」，設為 true 則直接跳轉
+      },
+      {
+        id: "chinese",
+        title: "國語學習區",
+        icon: "📖",
+        description: "練習生字造詞、成語闖關與句型小遊戲，變成語文小高手！",
+        buttonText: "進入練習",
+        themeClass: "theme-chinese",
+        url: "chinese_zone.html", // 未來建立國語學習區頁面時對應的檔名
+        ready: false
+      },
+      {
+        id: "math",
+        title: "數學學習區",
+        icon: "🔢",
+        description: "挑戰一位數加減法與趣味數學題，累積星星拿獎盃！",
+        buttonText: "開始挑戰",
+        themeClass: "theme-math",
+        url: "math_game.html", // 直接連往已完成的數學遊戲
+        ready: false
+      }
+    ];
+
+    // 渲染首頁功能卡片
+    function renderHubCards() {
+      const grid = document.getElementById('hubGrid');
+      grid.innerHTML = "";
+
+      LEARNING_MODULES.forEach(mod => {
+        const card = document.createElement('div');
+        card.className = `hub-card ${mod.themeClass}`;
+        card.innerHTML = `
+          <div class="card-icon">${mod.icon}</div>
+          <h2 class="card-title">${mod.title}</h2>
+          <p class="card-desc">${mod.description}</p>
+          <span class="card-cta">${mod.buttonText}</span>
+        `;
+
+        card.addEventListener('click', () => {
+          if (mod.ready) {
+            window.location.href = mod.url;
+          } else {
+            alert(`🚧 「${mod.title}」正在準備中，敬請期待喔！`);
+          }
+        });
+
+        grid.appendChild(card);
+      });
+    }
+
+    // 登入守門員與角色辨識
+    onAuthStateChanged(auth, async (user) => {
+      if (!user || !user.emailVerified) {
+        window.location.href = "login.html";
+        return;
+      }
+
+      const userSnap = await getDoc(doc(db, "users", user.uid));
+      if (!userSnap.exists()) {
+        await signOut(auth);
+        window.location.href = "login.html";
+        return;
+      }
+
+      const userData = userSnap.data();
+      const role = userData.role || "student";
+
+      document.getElementById('userName').textContent = userData.name || "同學";
+      
+      // 顯示對應的身分標籤
+      const roleTag = document.getElementById('userRoleTag');
+      if (role === "admin") {
+        roleTag.textContent = "管理員";
+        roleTag.className = "role-tag role-admin";
+        document.getElementById('quizManageBtn').classList.remove('hidden');
+        document.getElementById('adminManageBtn').classList.remove('hidden');
+      } else if (role === "teacher") {
+        roleTag.textContent = "老師";
+        roleTag.className = "role-tag role-teacher";
+        document.getElementById('quizManageBtn').classList.remove('hidden');
+      } else {
+        roleTag.textContent = "學生";
+        roleTag.className = "role-tag role-student";
+      }
+
+      renderHubCards();
+      document.getElementById('mainWrapper').classList.remove('hidden');
+    });
+
+    // 登出按鈕
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      await signOut(auth);
+      window.location.href = "login.html";
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>帳號權限管理後台</title>
+  <style>
+    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body {
+      margin: 0;
+      background-color: #f3f4f6;
+      padding: 24px 16px;
+      color: #1f2937;
+    }
+    .container {
+      max-width: 860px;
+      margin: 0 auto;
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      padding: 28px;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid #e5e7eb;
+      padding-bottom: 16px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    h2 { margin: 0; font-size: 22px; color: #111827; }
+    .nav-btns { display: flex; gap: 10px; }
+    .btn {
+      padding: 8px 14px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .btn-back { background-color: #e5e7eb; color: #374151; }
+    .btn-back:hover { background-color: #d1d5db; }
+    .btn-logout { background-color: #fee2e2; color: #b91c1c; }
+    .btn-logout:hover { background-color: #fecaca; }
+
+    /* 搜尋與篩選列 */
+    .filter-bar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .filter-bar input, .filter-bar select {
+      padding: 10px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+    .filter-bar input { flex: 1; min-width: 200px; }
+
+    /* 帳號列表表格 */
+    .table-wrapper { overflow-x: auto; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 15px;
+    }
+    th, td {
+      padding: 12px 14px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    th {
+      background-color: #f9fafb;
+      color: #4b5563;
+      font-weight: 600;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .badge-admin { background-color: #fee2e2; color: #b91c1c; }
+    .badge-teacher { background-color: #dbeafe; color: #1d4ed8; }
+    .badge-student { background-color: #dcfce7; color: #15803d; }
+
+    select.role-select {
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid #cbd5e1;
+      font-size: 14px;
+      background-color: #fff;
+      cursor: pointer;
+    }
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #1f2937;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-size: 14px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+    }
+    #toast.show { opacity: 1; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+
+  <div class="container hidden" id="adminContainer">
+    <div class="header">
+      <h2>🛡️ 帳號權限管理後台</h2>
+      <div class="nav-btns">
+        <a href="math_game.html" class="btn btn-back">返回數學遊戲</a>
+        <button class="btn btn-logout" id="logoutBtn">登出</button>
+      </div>
+    </div>
+
+    <div class="filter-bar">
+      <input type="text" id="searchInput" placeholder="搜尋姓名或電子郵件...">
+      <select id="roleFilter">
+        <option value="all">全部角色</option>
+        <option value="admin">管理員</option>
+        <option value="teacher">老師</option>
+        <option value="student">學生</option>
+      </select>
+    </div>
+
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>姓名</th>
+            <th>電子郵件</th>
+            <th>目前等級</th>
+            <th>變更權限</th>
+          </tr>
+        </thead>
+        <tbody id="userTableBody">
+          <tr><td colspan="4" style="text-align:center;">載入帳號資料中...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="toast">已更新權限</div>
+
+  <script type="module">
+    import { auth, db } from "./firebase-config.js";
+    import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-auth.js";
+    import { 
+      collection, doc, getDoc, getDocs, updateDoc 
+    } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js";
+
+    let currentAdminUid = null;
+    let allUsers = [];
+
+    const roleLabels = {
+      admin: { text: "管理員", class: "badge-admin" },
+      teacher: { text: "老師", class: "badge-teacher" },
+      student: { text: "學生", class: "badge-student" }
+    };
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2500);
+    }
+
+    // 1. 管理員身分守門員
+    onAuthStateChanged(auth, async (user) => {
+      if (!user || !user.emailVerified) {
+        window.location.href = "login.html";
+        return;
+      }
+
+      const userSnap = await getDoc(doc(db, "users", user.uid));
+      if (!userSnap.exists() || userSnap.data().role !== "admin") {
+        // 非管理員一律擋下並導回遊戲頁
+        alert("權限不足：只有管理員可以進入此頁面。");
+        window.location.href = "math_game.html";
+        return;
+      }
+
+      currentAdminUid = user.uid;
+      document.getElementById('adminContainer').classList.remove('hidden');
+      loadAllUsers();
+    });
+
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      await signOut(auth);
+      window.location.href = "login.html";
+    });
+
+    // 2. 讀取所有註冊帳號
+    async function loadAllUsers() {
+      try {
+        const querySnapshot = await getDocs(collection(db, "users"));
+        allUsers = [];
+        querySnapshot.forEach((docSnap) => {
+          allUsers.push({ id: docSnap.id, ...docSnap.data() });
+        });
+        renderTable();
+      } catch (error) {
+        console.error("讀取使用者失敗：", error);
+        document.getElementById('userTableBody').innerHTML = 
+          `<tr><td colspan="4" style="color:red; text-align:center;">讀取失敗：${error.message}</td></tr>`;
+      }
+    }
+
+    // 3. 渲染列表並支援即時搜尋篩選
+    function renderTable() {
+      const keyword = document.getElementById('searchInput').value.trim().toLowerCase();
+      const filterRole = document.getElementById('roleFilter').value;
+      const tbody = document.getElementById('userTableBody');
+
+      const filtered = allUsers.filter(u => {
+        const matchText = (u.name || "").toLowerCase().includes(keyword) || 
+                          (u.email || "").toLowerCase().includes(keyword);
+        const userRole = u.role || "student";
+        const matchRole = filterRole === "all" || userRole === filterRole;
+        return matchText && matchRole;
+      });
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#6b7280;">找不到符合條件的帳號</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = "";
+      filtered.forEach(u => {
+        const currentRole = u.role || "student";
+        const badgeInfo = roleLabels[currentRole] || roleLabels.student;
+        const isSelf = u.id === currentAdminUid;
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><strong>${u.name || "未命名"}</strong> ${isSelf ? '<span style="font-size:12px;color:#6b7280;">(你自己)</span>' : ''}</td>
+          <td>${u.email || ""}</td>
+          <td><span class="badge ${badgeInfo.class}" id="badge-${u.id}">${badgeInfo.text}</span></td>
+          <td>
+            <select class="role-select" data-uid="${u.id}" ${isSelf ? 'disabled title="為避免誤鎖，無法在此降級自己的管理員權限"' : ''}>
+              <option value="student" ${currentRole === 'student' ? 'selected' : ''}>學生 (student)</option>
+              <option value="teacher" ${currentRole === 'teacher' ? 'selected' : ''}>老師 (teacher)</option>
+              <option value="admin" ${currentRole === 'admin' ? 'selected' : ''}>管理員 (admin)</option>
+            </select>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      // 綁定下拉選單變更事件
+      document.querySelectorAll('.role-select').forEach(select => {
+        select.addEventListener('change', async (e) => {
+          const targetUid = e.target.dataset.uid;
+          const newRole = e.target.value;
+          await updateUserRole(targetUid, newRole);
+        });
+      });
+    }
+
+    // 4. 更新 Firestore 中的角色等級
+    async function updateUserRole(targetUid, newRole) {
+      try {
+        await updateDoc(doc(db, "users", targetUid), {
+          role: newRole
+        });
+
+        // 同步更新本地陣列與畫面標籤
+        const targetUser = allUsers.find(u => u.id === targetUid);
+        if (targetUser) targetUser.role = newRole;
+
+        const badgeEl = document.getElementById(`badge-${targetUid}`);
+        if (badgeEl) {
+          badgeEl.textContent = roleLabels[newRole].text;
+          badgeEl.className = `badge ${roleLabels[newRole].class}`;
+        }
+
+        showToast(`✅ 已成功將「${targetUser?.name || '使用者'}」設為${roleLabels[newRole].text}`);
+      } catch (error) {
+        console.error("更新權限失敗：", error);
+        alert("更新權限失敗：" + error.message);
+        renderTable(); // 還原畫面選項
+      }
+    }
+
+    document.getElementById('searchInput').addEventListener('input', renderTable);
+    document.getElementById('roleFilter').addEventListener('change', renderTable);
+  </script>
+</body>
+</html>
